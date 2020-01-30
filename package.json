@@ -21,6 +21,10 @@
   "homepage": "https://github.com/simama/harukaze#readme",
   "dependencies": {
     "@tensorflow-models/posenet": "^2.2.1",
-    "@tensorflow/tfjs-node-gpu": "^1.5.1"
+    "@tensorflow/tfjs-node-gpu": "^1.5.1",
+    "esm": "^3.2.25",
+    "node-glfw-3": "^0.3.4",
+    "node-librealsense": "^0.2130.0",
+    "performance-now": "^2.1.0"
   }
 }
