@@ -2,9 +2,9 @@
 
 'use strict';
 
+require('@tensorflow/tfjs-node-gpu')
 //import * as posenet from '@tensorflow-models/posenet';
 
-require('@tensorflow/tfjs-node-gpu')
 const posenet = require('@tensorflow-models/posenet')
 const rs2 = require('./node_modules/node-librealsense/index.js');
 const {GLFWWindow} = require('./node_modules/node-librealsense/examples/glfw-window.js');
@@ -34,6 +34,7 @@ while (! win.shouldWindowClose()) {
   glfw.draw2x2Streams(win.window, 1,
       color.data, 'rgb8', color.width, color.height);
   win.endPaint();
+  const pose = net.estimateSinglePose(color, imageScaleFactor, flipHorizontal, outputStride);
 }
 
 pipeline.stop();
