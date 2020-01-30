@@ -1,0 +1,26 @@
+{
+  "name": "harukaze",
+  "version": "0.0.1",
+  "description": "Harukaze performance.",
+  "main": "pose.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/simama/harukaze.git"
+  },
+  "keywords": [
+    "harukaze"
+  ],
+  "author": "marko simic pablo bordons",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/simama/harukaze/issues"
+  },
+  "homepage": "https://github.com/simama/harukaze#readme",
+  "dependencies": {
+    "@tensorflow-models/posenet": "^2.2.1",
+    "@tensorflow/tfjs-node-gpu": "^1.5.1"
+  }
+}
