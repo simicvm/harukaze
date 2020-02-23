@@ -2,6 +2,7 @@ import os
 import sys
 import json
 import argparse
+from multiprocessing import Process, Queue, Manager
 
 import cv2
 import numpy as np
@@ -19,13 +20,13 @@ from drawables import ChaserBall
 # cap = cv2.VideoCapture('data/ai_dance_short.MOV')
 
 
-pose = Pose()
-animation = Animation()
-animation.add_pose(pose)
+# pose = Pose()
+# animation = Animation()
+# animation.add_pose(pose)
 
-animation.objects.append(ChaserBall(pose.joints["right_hand"], x=300, y=300))
-animation.objects.append(ChaserBall(pose.joints["head"], x=300, y=300))
-animation.objects.append(ChaserBall(pose.joints["left_hand"], x=300, y=300))
+# animation.objects.append(ChaserBall(pose.joints["right_hand"], x=300, y=300))
+# animation.objects.append(ChaserBall(pose.joints["head"], x=300, y=300))
+# animation.objects.append(ChaserBall(pose.joints["left_hand"], x=300, y=300))
 
 
 def parse_arguments():
@@ -47,17 +48,50 @@ def parse_arguments():
 
 def set_openpose(args):
     params = dict()
+    # manager = Manager()
+    # params = manager.dict()
 
     for arg in vars(args[0]):
         if arg.startswith("op_"):
             val = getattr(args[0], arg)
             argument = arg.strip("op_")
             params[argument] = val
-    print(params)
+    # print(params)
+    return params
 
 
-def run_inference(params):
-    pass
+def run_openpose(openpose_params):
+    print(openpose_params)
+    opWrapper = op.WrapperPython()
+    opWrapper.configure(openpose_params)
+    opWrapper.start()
+
+    datum = op.Datum()
+    print("Initialized OpenPose!")
+
+
+def initialize_realsense():
+    cv2.namedWindow("projection", cv2.WINDOW_NORMAL)
+    cv2.setWindowProperty("projection", cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_FULLSCREEN)
+    # fan_graphics = cv2.imread("/home/ascent/Pictures/fan_diff_small.png")
+    stream = cv2.VideoCapture(-1)
+    pipe = rs.pipeline()
+    profile = pipe.start()
+    return stream, pipe, profile
+
+
+def project_visuals():
+    stream, pipe, profile = initialize_realsense()
+    while True:
+        frames = pipe.wait_for_frames()
+        color_frame = frames.get_color_frame()
+        color_image = np.asanyarray(color_frame.get_data())
+        color_image = cv2.cvtColor(color_image, cv2.COLOR_BGR2RGB)
+
+        cv2.imshow("projection", color_image)
+        key = cv2.waitKey(1)
+        if key == ord("q"):
+            return "Closing the app, user pressed 'q' key!"
 
 
 # i = 0
@@ -107,3 +141,9 @@ def run_inference(params):
 if __name__ == "__main__":
     arguments = parse_arguments()
     openpose_params = set_openpose(arguments)
+    q = Queue()
+    p = Process(target=run_openpose, args=(openpose_params,))
+    p.start()
+    message = project_visuals()
+    print(message)
+    p.join()
