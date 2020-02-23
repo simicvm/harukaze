@@ -37,8 +37,9 @@ try:
 
     # Custom Params (refer to include/openpose/flags.hpp for more parameters)
     params = dict()
-    params["model_folder"] = "../../../models/"
-    params["no_display"] = True
+    # params["model_folder"] = "../../../models/"
+    params["model_folder"] = "/home/ascent/openpose/models/"
+    # params["no_display"] = True
 
     # Add others in path?
     for i in range(0, len(args[1])):
@@ -75,7 +76,6 @@ try:
     profile = pipe.start()
 
     while True:
-        # ret, img = stream.read()
         frames = pipe.wait_for_frames()
         color_frame = frames.get_color_frame()
         color_image = np.asanyarray(color_frame.get_data())
@@ -104,6 +104,7 @@ try:
 
     stream.release()
     cv2.destroyAllWindows()
+
 except Exception as e:
     print(e)
     sys.exit(-1)
