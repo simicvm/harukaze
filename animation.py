@@ -2,18 +2,12 @@ from collections import namedtuple
 import cv2
 import json
 
-from drawables import RandomBall, ChaserBall
 from pose import Pose
-
 
 
 class Animation():
 
     objects = [
-
-        RandomBall(100, 100),
-        RandomBall(150, 150),
-        RandomBall(200, 200),
     ]
 
     pose = None
@@ -30,12 +24,11 @@ class Animation():
 
     def update(self):
         for obj in self.objects:
-            print(obj)
             obj.update()
 
     def draw(self, frame):
         for obj in self.objects:
-            obj.draw(frame)
+            frame = obj.draw(frame)
         
         return frame
 

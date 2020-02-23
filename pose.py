@@ -33,7 +33,7 @@ class Pose():
     def update_joints(self, pose_points):
 
         for joint_name, joint in self.joints.items():
-            print("updating {}".format(joint_name))
+            # print("updating {}".format(joint_name))
             idx = joint.idx
             pose_point = pose_points[idx]
             x, y = pose_point[:2]
@@ -43,7 +43,6 @@ class Pose():
                 y = int(y)
 
             joint.update(x, y)
-
 
 def pose_points_from_json(json_path):
 
@@ -74,5 +73,3 @@ if __name__ == "__main__":
         print("right_hand_x ", pose.joints["right_hand"].x)
 
         print(pose_points_[0])
-
-

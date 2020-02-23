@@ -11,8 +11,11 @@ from openpose import pyopenpose as op
 
 from pose import Pose, pose_points_from_json
 from animation import Animation
-from drawables import ChaserBall
+from drawables import SpinningChaserBall, SpinningFixedBall, SpinningRandomBall
 
+DRAW_POSE = False
+inference_directory = '../data/pose_output/output'
+inference_files = sorted([os.path.join(inference_directory, f) for f in os.listdir(inference_directory)])
 
 # inference_directory = 'data/pose_output/output'
 # inference_files = sorted([os.path.join(inference_directory, f) for f in os.listdir(inference_directory)])
