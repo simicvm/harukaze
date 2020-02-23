@@ -5,7 +5,7 @@ import json
 
 class Joint():
     x, y = 0, 0
-    
+
     def __init__(self, name, idx):
         self.name = name
         self.idx = idx
@@ -29,7 +29,7 @@ class Pose():
 
     def __init__(self):
         pass
-    
+
     def update_joints(self, pose_points):
 
         for joint_name, joint in self.joints.items():
@@ -41,9 +41,8 @@ class Pose():
             if self.force_int:
                 x = int(x)
                 y = int(y)
-                
-            joint.update(x, y)
 
+            joint.update(x, y)
 
 
 def pose_points_from_json(json_path):
@@ -59,12 +58,7 @@ def pose_points_from_json(json_path):
     return _split_points(points)
 
 
-
-
 if __name__ == "__main__":
-
-
-
     inference_directory = 'data/pose_output/output'
     inference_files = sorted([os.path.join(inference_directory, f) for f in os.listdir(inference_directory)])
 
