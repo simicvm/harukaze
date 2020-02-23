@@ -45,7 +45,6 @@ class Pose():
             joint.update(x, y)
 
 
-
 def pose_points_from_json(json_path):
 
     def _split_points(points):
@@ -60,10 +59,7 @@ def pose_points_from_json(json_path):
 
 
 
-
 if __name__ == "__main__":
-
-
 
     inference_directory = 'data/pose_output/output'
     inference_files = sorted([os.path.join(inference_directory, f) for f in os.listdir(inference_directory)])
@@ -80,5 +76,3 @@ if __name__ == "__main__":
         print("right_hand_x ", pose.joints["right_hand"].x)
 
         print(pose_points_[0])
-
-
