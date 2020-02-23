@@ -24,7 +24,6 @@ class Animation():
 
     def update(self):
         for obj in self.objects:
-            print(obj)
             obj.update()
 
     def draw(self, frame):
