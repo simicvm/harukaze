@@ -1,15 +1,21 @@
-import cv2 
-import json
 import os
+import sys
+import json
+import argparse
+
+import cv2
+import numpy as np
+import pyrealsense2 as rs
 
 from pose import Pose, pose_points_from_json
 from animation import Animation
 from drawables import ChaserBall
 
+
 inference_directory = 'data/pose_output/output'
 inference_files = sorted([os.path.join(inference_directory, f) for f in os.listdir(inference_directory)])
 
-cap = cv2.VideoCapture('data/ai_dance_short.MOV') 
+cap = cv2.VideoCapture('data/ai_dance_short.MOV')
 
 
 pose = Pose()
@@ -26,9 +32,9 @@ while(cap.isOpened()):
     # Capture frame-by-frame
     ret, frame = cap.read()
     width, height = frame.shape[:2]
-  
+
     if ret == True:
-        
+
         json_path = inference_files[i]
 
         pose_points = pose_points_from_json(json_path)
@@ -46,20 +52,19 @@ while(cap.isOpened()):
         frame = animation.draw(frame)
 
         cv2.imshow('Frame', frame)
- 
+
       # Press Q on keyboard to  exit
         if cv2.waitKey(1) & 0xFF == ord('q'):
           break
- 
+
     # Break the loop
-    else: 
+    else:
         break
 
     i += 1
 
 # When everything done, release the video capture object
 cap.release()
- 
+
 # Closes all the frames
 cv2.destroyAllWindows()
- 
