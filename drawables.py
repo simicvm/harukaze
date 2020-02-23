@@ -3,17 +3,20 @@ import random
 import numpy as np
 
 
-class Ball():
+class Drawable():
     def __init__(self, x, y, name):
         self.x = x
         self.y = y
         self.name = name
 
 
-class Chaser(Ball):
+class Chaser(Drawable):
     """
         contains update method for chasing ball (to anchor)
     """
+
+    speed = 10
+
     def __init__(self, chase_to, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.chase_to = chase_to
@@ -24,7 +27,7 @@ class Chaser(Ball):
             self.y += int((self.chase_to.y - self.y)/10)
 
 
-class Fixed(Ball):
+class Fixed(Drawable):
     """
         contains update method for fixed ball to an anchor
     """
@@ -38,7 +41,7 @@ class Fixed(Ball):
             self.y = self.fixed_to.y
 
 
-class Random(Ball):
+class Random(Drawable):
     """
         contains update method for random walking ball
     """
@@ -50,24 +53,23 @@ class Random(Ball):
         self.y += random.choice(range(-10, 10))
 
 
-class Spinning(Ball):
+class Spinning(Drawable):
     """
         contains draw method for spinning ball
     """
 
-    n_circles = 20
+    # n_circles = 20
+    n_circles = 100
     step = 0
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
     def draw(self, frame):
-
-        cv2.line(frame, (self.x-50, self.y), (self.x+50, self.y), (150, 150, 150), 3)
-        cv2.line(frame, (self.x, self.y-50), (self.x, self.y+50), (150, 150, 150), 3)
+        overlay = frame.copy()
 
         for i in range(self.n_circles, 0, -1):
-            angle = 2*np.pi*(1.0 * i / self.n_circles) * self.step
+            angle = 2*np.pi*(1.0 * i / self.n_circles) * self.step / 2
             
             if i%2:
                 color = (0, 0, 230)
@@ -79,9 +81,17 @@ class Spinning(Ball):
 
             size = 3*i
 
-            cv2.circle(frame, center, size, color, -1)
+            cv2.circle(overlay, center, size, color, -1)
+
+            alpha = 1 - (i/self.n_circles)
+            print(size, alpha)
+            frame = cv2.addWeighted(overlay, alpha, frame, 1 - alpha, 0)
 
         self.step += 1
+
+        exit()
+
+        return frame
 
 
 class SpinningChaserBall(Chaser, Spinning):
