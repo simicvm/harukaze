@@ -96,7 +96,7 @@ def run_openpose(openpose_params, image_pipe, pose_pipe):
         pose_pipe.send(datum.poseKeypoints)
 
 
-def initialize_realsense(frame_name):
+def initialize_realsense(frame_name="Frame", res_w=1280, res_h=720, fps=30):
     cv2.namedWindow(frame_name, cv2.WINDOW_NORMAL)
     cv2.setWindowProperty(
         frame_name,
@@ -105,7 +105,9 @@ def initialize_realsense(frame_name):
     )
     stream = cv2.VideoCapture(-1)
     pipe = rs.pipeline()
-    profile = pipe.start()
+    config = rs.config()
+    config.enable_stream(rs.stream.color, res_w, res_h, rs.format.rgb8, fps)
+    profile = pipe.start(config)
     return stream, pipe, profile
 
 
@@ -114,10 +116,10 @@ def project_visuals(
         data_file=None,
         frame_name="Frame",
         image_pipe=None,
-        pose_pipe=None
+        pose_pipe=None,
 ):
     if run_live:
-        stream, pipe, profile = initialize_realsense(frame_name)
+        stream, pipe, profile = initialize_realsense(frame_name=frame_name)
     elif data_file is not None:
         cap = cv2.VideoCapture(data_file)
     else:
