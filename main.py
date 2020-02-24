@@ -11,7 +11,7 @@ import pyrealsense2 as rs
 
 from pose import Pose, pose_points_from_json
 from animation import Animation
-from drawables import SpinningChaserBall, SpinningFixedBall, SpinningRandomBall
+from drawables import SpinningChaserBall, SpinningFixedBall, SpinningRandomBall, ChaserSpinningMiddleHands
 
 if sys.platform == "linux":
     from openpose import pyopenpose as op
@@ -25,12 +25,16 @@ pose = Pose()
 animation = Animation()
 animation.add_pose(pose)
 
+
 animation.objects.append(
-    SpinningChaserBall(name="ball_1", chase_to=pose.joints["right_hand"], x=300, y=300)
+    ChaserSpinningMiddleHands(name="ball_1", right_hand=pose.joints["right_hand"], left_hand=pose.joints["left_hand"], x=300, y=300)
 )
-animation.objects.append(
-    SpinningChaserBall(name="ball_2", chase_to=pose.joints["left_hand"], x=300, y=300)
-)
+# animation.objects.append(
+#     SpinningChaserBall(name="ball_1", chase_to=pose.joints["right_hand"], x=300, y=300)
+# )
+# animation.objects.append(
+#     SpinningChaserBall(name="ball_2", chase_to=pose.joints["left_hand"], x=300, y=300)
+# )
 # animation.objects.append(SpinningChaserBall(name="ball_3", chase_to=pose.joints["head"], x=300, y=300))
 
 
@@ -133,18 +137,18 @@ def project_visuals(
         color_image = cv2.cvtColor(color_image, cv2.COLOR_BGR2RGB)
         image_pipe.send(color_image)
         pose_points = pose_pipe.recv()
-        # black_image = np.zeros((720, 1280, 3), dtype=np.uint8)
+        black_image = np.zeros((720, 1280, 3), dtype=np.uint8)
 
         if pose_points.ndim != 3:
             continue
         pose_points = pose_points[0]
         if len(pose_points) == 25:
             animation.update_pose(pose_points)
-        animation.draw_pose(color_image)
+        # animation.draw_pose(color_image)
         # animation.draw_pose(black_image)
         animation.update()
-        color_image = animation.draw(color_image)
-        # color_image = animation.draw(black_image)
+        # color_image = animation.draw(color_image)
+        color_image = animation.draw(black_image)
 
         cv2.imshow(frame_name, color_image)
 
