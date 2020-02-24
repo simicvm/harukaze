@@ -34,14 +34,13 @@ class ChaserSpinningMiddleHands(Drawable):
 
     speed = 0.2
 
-    n_circles = 50
+    n_circles = 30
     step = 0
-    angular_speed = 2
+    angular_speed = 0.4
     center_radius = 100
-    size_parameter = 2
+    size_parameter = 1
 
     hand_to_hand = 0
-
     hand_to_hand_sensitivity = 500
 
     def __init__(self, left_hand, right_hand, *args, **kwargs):
@@ -53,9 +52,7 @@ class ChaserSpinningMiddleHands(Drawable):
     def draw(self, frame, allow_transparency):
 
         for i in range(self.n_circles, 0, -1):
-
-            overlay = frame.copy()
-
+            
             angle = 2*np.pi*(1.0 * i / self.n_circles) * self.step * self.angular_speed
 
             if i%2:
@@ -68,7 +65,10 @@ class ChaserSpinningMiddleHands(Drawable):
 
             size = int(self.size_parameter * i * self.hand_to_hand / 100)
 
+            self.n_circles = int(self.hand_to_hand) + 1
+
             if allow_transparency:
+                overlay = frame.copy()
                 cv2.circle(overlay, center, size, color, -1)
                 alpha = 1 - (i/self.n_circles)
                 frame = cv2.addWeighted(overlay, alpha, frame, 1 - alpha, 0)
@@ -192,45 +192,45 @@ class Spinning(Drawable):
         return frame
 
 
-class Katana():
+# class Katana():
 
-    katana_length = 100
+#     katana_length = 100
 
-    def __init__(self, fixed_elbow, fixed_hand, name):
-        # self.elbow_x = fixed_elbow.x
-        # self.elbow_y = fixed_elbow.y
+#     def __init__(self, fixed_elbow, fixed_hand, name):
+#         # self.elbow_x = fixed_elbow.x
+#         # self.elbow_y = fixed_elbow.y
 
-        # self.elbow_x = fixed_elbow.x
-        # self.elbow_y = fixed_elbow.y
-        self.fixed_hand = fixed_hand
-        self.fixed_elbow = fixed_elbow
-        self.name = name
+#         # self.elbow_x = fixed_elbow.x
+#         # self.elbow_y = fixed_elbow.y
+#         self.fixed_hand = fixed_hand
+#         self.fixed_elbow = fixed_elbow
+#         self.name = name
 
-    def update(self):
-        self.elbow_x = self.fixed_elbow.x
-        self.elbow_y = self.fixed_elbow.y
+#     def update(self):
+#         self.elbow_x = self.fixed_elbow.x
+#         self.elbow_y = self.fixed_elbow.y
 
-        self.hand_x = self.fixed_hand.x
-        self.hand_y = self.fixed_hand.y
+#         self.hand_x = self.fixed_hand.x
+#         self.hand_y = self.fixed_hand.y
 
-    def draw(self, frame):
-        cv2.circle(frame, (self.elbow_x, self.elbow_y), 2, (255, 255, 255), -1)
-        cv2.circle(frame, (self.hand_x, self.hand_y), 2, (255, 255, 255), -1)
+#     def draw(self, frame):
+#         cv2.circle(frame, (self.elbow_x, self.elbow_y), 2, (255, 255, 255), -1)
+#         cv2.circle(frame, (self.hand_x, self.hand_y), 2, (255, 255, 255), -1)
 
-        dx = self.hand_x - self.elbow_x
-        dy = self.hand_y - self.elbow_y
+#         dx = self.hand_x - self.elbow_x
+#         dy = self.hand_y - self.elbow_y
 
-        length = (dx*dx+dy*dy)**0.5
+#         length = (dx*dx+dy*dy)**0.5
 
-        unit_x = dx/length
-        unit_y = dy/length
+#         unit_x = dx/length
+#         unit_y = dy/length
 
-        cv2.line(frame, (self.hand_x, self.hand_y), (self.elbow_x, self.elbow_y), (0, 0, 255), 10)
+#         cv2.line(frame, (self.hand_x, self.hand_y), (self.elbow_x, self.elbow_y), (0, 0, 255), 10)
 
 
-        print(length)
-        # exit()
-        return frame
+#         print(length)
+#         # exit()
+#         return frame
 
 
 class SpinningChaserBall(Chaser, Spinning):
