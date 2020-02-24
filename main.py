@@ -82,10 +82,10 @@ def parse_arguments():
         help="Absolute path to the desired output folder.",
     )
     parser.add_argument(
-        "--data-dir",
-        default="~/harukaze/data",
+        "--data-file",
+        default=None,
         type=str,
-        help="Absolute path to the folder containing data for inference.",
+        help="Absolute path to the video file.",
     )
     return parser.parse_known_args()
 
@@ -145,28 +145,35 @@ def initialize_realsense(frame_name="Frame", res_w=1280, res_h=720, fps=30):
     return stream, pipe, profile
 
 
+def get_image_from_realsense(pipe):
+    frames = pipe.wait_for_frames()
+    color_frame = frames.get_color_frame()
+    color_image = np.asanyarray(color_frame.get_data())
+    color_image = cv2.cvtColor(color_image, cv2.COLOR_BGR2RGB)
+    return None, color_image
+
+
 def project_visuals(
-        run_live=False,
         data_file=None,
         frame_name="Frame",
         openpose_params=None,
         image_pipe=None,
         pose_pipe=None,
 ):
-    if run_live:
+    if data_file is None:
         stream, pipe, profile = initialize_realsense(frame_name=frame_name)
-    elif data_file is not None:
+        get_image = get_image_from_realsense
+    elif os.path.isfile(data_file):
         cap = cv2.VideoCapture(data_file)
+        get_image = lambda x: cap.read()
+        pipe = None
     else:
         return "Error, running mode not specified properly!"
 
     datum, opWrapper = initialize_openpose(openpose_params)
     while True:
         start_time = time.time()
-        frames = pipe.wait_for_frames()
-        color_frame = frames.get_color_frame()
-        color_image = np.asanyarray(color_frame.get_data())
-        color_image = cv2.cvtColor(color_image, cv2.COLOR_BGR2RGB)
+        _, color_image = get_image(pipe)
         # image_pipe.send(color_image)
         # pose_points = pose_pipe.recv()
         datum.cvInputData = color_image
@@ -210,7 +217,7 @@ if __name__ == "__main__":
     # )
     # p_1.start()
     message = project_visuals(
-        run_live=True,
+        data_file=arguments[0].data_file,
         image_pipe=image_pipe_parent,
         pose_pipe=pose_pipe_parent,
         openpose_params=openpose_params
