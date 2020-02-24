@@ -6,13 +6,21 @@ import json
 class Joint():
     x, y = 0, 0
 
+    sensitivity = 1000
+
     def __init__(self, name, idx):
         self.name = name
         self.idx = idx
 
     def update(self, x, y):
-        self.x = x
-        self.y = y
+
+        if abs(x - self.x) < self.sensitivity and x != 0:
+            self.x = x
+
+        if abs(y - self.y) < self.sensitivity and y != 0:
+            self.y = y
+
+        
 
 
 class Pose():
@@ -43,6 +51,7 @@ class Pose():
                 y = int(y)
 
             joint.update(x, y)
+
 
 def pose_points_from_json(json_path):
 
