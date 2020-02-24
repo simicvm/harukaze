@@ -29,7 +29,7 @@ class Animation():
     def draw(self, frame):
         for obj in self.objects:
             frame = obj.draw(frame)
-        
+
         return frame
 
     def draw_pose(self, frame):

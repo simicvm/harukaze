@@ -83,14 +83,13 @@ class Spinning(Drawable):
         super().__init__(*args, **kwargs)
 
     def draw(self, frame):
-        
 
         for i in range(self.n_circles, 0, -1):
 
             overlay = frame.copy()
 
             angle = 2*np.pi*(1.0 * i / self.n_circles) * self.step * self.angular_speed
-            
+
             if i%2:
                 color = (0, 0, 190)
             else:
