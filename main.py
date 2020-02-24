@@ -8,12 +8,18 @@ from multiprocessing import Process, Queue, Manager, Pipe
 import cv2
 import numpy as np
 import pyrealsense2 as rs
-from openpose import pyopenpose as op
 
 from pose import Pose, pose_points_from_json
 from animation import Animation
 from drawables import SpinningChaserBall, SpinningFixedBall, SpinningRandomBall
 
+if sys.platform == "linux":
+    from openpose import pyopenpose as op
+elif sys.platform == "darwin":
+    print("Running without OpenPose module.")
+else:
+    print("Platform not recognized. Terminating!")
+    sys.exit()
 
 pose = Pose()
 animation = Animation()
