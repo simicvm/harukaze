@@ -43,6 +43,17 @@ def parse_arguments():
         help="Absolute path to network models.",
     )
     parser.add_argument(
+        "--op-tracking",
+        type=int,
+        help="Number of frames to track."
+    )
+    parser.add_argument(
+        "--op-number-people-max",
+        default=1,
+        type=int,
+        help="Number of people to estimate pose."
+    )
+    parser.add_argument(
         "--otput-pose-dir",
         default="~/harukaze/output",
         type=str,
@@ -59,15 +70,13 @@ def parse_arguments():
 
 def set_openpose(args):
     params = dict()
-    # manager = Manager()
-    # params = manager.dict()
 
     for arg in vars(args[0]):
         if arg.startswith("op_"):
             val = getattr(args[0], arg)
-            argument = arg.strip("op_")
-            params[argument] = val
-    # print(params)
+            if val is not None:
+                argument = arg.strip("op_")
+                params[argument] = val
     return params
 
 
@@ -87,17 +96,18 @@ def run_openpose(openpose_params, image_pipe, pose_pipe):
         pose_pipe.send(datum.poseKeypoints)
 
 
-def initialize_realsense(frame_name):
+def initialize_realsense(frame_name="Frame", res_w=1280, res_h=720, fps=30):
     cv2.namedWindow(frame_name, cv2.WINDOW_NORMAL)
     cv2.setWindowProperty(
         frame_name,
         cv2.WND_PROP_FULLSCREEN,
         cv2.WINDOW_FULLSCREEN
     )
-    # fan_graphics = cv2.imread("/home/ascent/Pictures/fan_diff_small.png")
     stream = cv2.VideoCapture(-1)
     pipe = rs.pipeline()
-    profile = pipe.start()
+    config = rs.config()
+    config.enable_stream(rs.stream.color, res_w, res_h, rs.format.rgb8, fps)
+    profile = pipe.start(config)
     return stream, pipe, profile
 
 
@@ -106,10 +116,10 @@ def project_visuals(
         data_file=None,
         frame_name="Frame",
         image_pipe=None,
-        pose_pipe=None
+        pose_pipe=None,
 ):
     if run_live:
-        stream, pipe, profile = initialize_realsense(frame_name)
+        stream, pipe, profile = initialize_realsense(frame_name=frame_name)
     elif data_file is not None:
         cap = cv2.VideoCapture(data_file)
     else:
@@ -123,6 +133,7 @@ def project_visuals(
         color_image = cv2.cvtColor(color_image, cv2.COLOR_BGR2RGB)
         image_pipe.send(color_image)
         pose_points = pose_pipe.recv()
+        # black_image = np.zeros((720, 1280, 3), dtype=np.uint8)
 
         if pose_points.ndim != 3:
             continue
@@ -130,8 +141,10 @@ def project_visuals(
         if len(pose_points) == 25:
             animation.update_pose(pose_points)
         animation.draw_pose(color_image)
+        # animation.draw_pose(black_image)
         animation.update()
         color_image = animation.draw(color_image)
+        # color_image = animation.draw(black_image)
 
         cv2.imshow(frame_name, color_image)
 
@@ -149,17 +162,16 @@ def project_visuals(
 if __name__ == "__main__":
     arguments = parse_arguments()
     openpose_params = set_openpose(arguments)
-    q = Queue()
-    image_pipe_send, image_pipe_receive = Pipe()
-    pose_pipe_send, pose_pipe_receive = Pipe()
+    image_pipe_parent, image_pipe_child = Pipe()
+    pose_pipe_parent, pose_pipe_child = Pipe()
     p_1 = Process(
         target=run_openpose,
         daemon=True,
-        args=(openpose_params, image_pipe_receive, pose_pipe_send),
+        args=(openpose_params, image_pipe_child, pose_pipe_child),
     )
     p_1.start()
     message = project_visuals(
-        run_live=True, image_pipe=image_pipe_send, pose_pipe=pose_pipe_receive
+        run_live=True, image_pipe=image_pipe_parent, pose_pipe=pose_pipe_parent
     )
     print(message)
     p_1.join()
