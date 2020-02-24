@@ -24,13 +24,12 @@ class Animation():
 
     def update(self):
         for obj in self.objects:
-            print(obj)
             obj.update()
 
     def draw(self, frame):
         for obj in self.objects:
-            obj.draw(frame)
-        
+            frame = obj.draw(frame)
+
         return frame
 
     def draw_pose(self, frame):

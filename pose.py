@@ -33,7 +33,7 @@ class Pose():
     def update_joints(self, pose_points):
 
         for joint_name, joint in self.joints.items():
-            print("updating {}".format(joint_name))
+            # print("updating {}".format(joint_name))
             idx = joint.idx
             pose_point = pose_points[idx]
             x, y = pose_point[:2]
