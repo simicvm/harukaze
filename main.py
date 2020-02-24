@@ -58,6 +58,24 @@ def parse_arguments():
         help="Number of people to estimate pose."
     )
     parser.add_argument(
+        "--op-render-pose",
+        default=1,
+        type=int,
+        help="Render pose on CPU, GPU, or don't."
+    )
+    parser.add_argument(
+        "--op-net_resolution",
+        default="-1x368",
+        type=str,
+        help="Input resolution to the network. Multiples of 16."
+    )
+    parser.add_argument(
+        "--op-disable-multi-thread",
+        default=False,
+        action="store_true",
+        help="Enable for lower latency."
+    )
+    parser.add_argument(
         "--otput-pose-dir",
         default="~/harukaze/output",
         type=str,
@@ -82,6 +100,18 @@ def set_openpose(args):
                 argument = arg.strip("op_")
                 params[argument] = val
     return params
+
+
+def initialize_openpose(openpose_params):
+    print(openpose_params)
+    opWrapper = op.WrapperPython()
+    opWrapper.configure(openpose_params)
+    opWrapper.start()
+
+    datum = op.Datum()
+    print("Initialized OpenPose!")
+
+    return datum, opWrapper
 
 
 def run_openpose(openpose_params, image_pipe, pose_pipe):
@@ -119,6 +149,7 @@ def project_visuals(
         run_live=False,
         data_file=None,
         frame_name="Frame",
+        openpose_params=None,
         image_pipe=None,
         pose_pipe=None,
 ):
@@ -129,14 +160,18 @@ def project_visuals(
     else:
         return "Error, running mode not specified properly!"
 
+    datum, opWrapper = initialize_openpose(openpose_params)
     while True:
         start_time = time.time()
         frames = pipe.wait_for_frames()
         color_frame = frames.get_color_frame()
         color_image = np.asanyarray(color_frame.get_data())
         color_image = cv2.cvtColor(color_image, cv2.COLOR_BGR2RGB)
-        image_pipe.send(color_image)
-        pose_points = pose_pipe.recv()
+        # image_pipe.send(color_image)
+        # pose_points = pose_pipe.recv()
+        datum.cvInputData = color_image
+        opWrapper.emplaceAndPop([datum])
+        pose_points = datum.poseKeypoints
         black_image = np.zeros((720, 1280, 3), dtype=np.uint8)
 
         if pose_points.ndim != 3:
@@ -168,14 +203,17 @@ if __name__ == "__main__":
     openpose_params = set_openpose(arguments)
     image_pipe_parent, image_pipe_child = Pipe()
     pose_pipe_parent, pose_pipe_child = Pipe()
-    p_1 = Process(
-        target=run_openpose,
-        daemon=True,
-        args=(openpose_params, image_pipe_child, pose_pipe_child),
-    )
-    p_1.start()
+    # p_1 = Process(
+    #     target=run_openpose,
+    #     daemon=True,
+    #     args=(openpose_params, image_pipe_child, pose_pipe_child),
+    # )
+    # p_1.start()
     message = project_visuals(
-        run_live=True, image_pipe=image_pipe_parent, pose_pipe=pose_pipe_parent
+        run_live=True,
+        image_pipe=image_pipe_parent,
+        pose_pipe=pose_pipe_parent,
+        openpose_params=openpose_params
     )
     print(message)
-    p_1.join()
+    # p_1.join()
