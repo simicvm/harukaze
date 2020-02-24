@@ -7,13 +7,15 @@ from pose import Pose
 
 class Animation():
 
+    allow_transparency = False
+
     objects = [
     ]
 
     pose = None
 
-    def __init__(self):
-        pass
+    def __init__(self, allow_transparency=False):
+        self.allow_transparency = allow_transparency
 
     def add_pose(self, pose):
         self.pose = pose
@@ -28,7 +30,7 @@ class Animation():
 
     def draw(self, frame):
         for obj in self.objects:
-            frame = obj.draw(frame)
+            frame = obj.draw(frame, allow_transparency=self.allow_transparency)
 
         return frame
 
