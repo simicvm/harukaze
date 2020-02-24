@@ -170,15 +170,22 @@ def project_visuals(
     else:
         return "Error, running mode not specified properly!"
 
-    datum, opWrapper = initialize_openpose(openpose_params)
+    # datum, opWrapper = initialize_openpose(openpose_params)
+    pose_points_old = np.zeros((720, 1280, 3), dtype=np.uint8)
     while True:
         start_time = time.time()
         _, color_image = get_image(pipe)
-        # image_pipe.send(color_image)
-        # pose_points = pose_pipe.recv()
-        datum.cvInputData = color_image
-        opWrapper.emplaceAndPop([datum])
-        pose_points = datum.poseKeypoints
+
+        image_pipe.send(color_image)
+        if pose_pipe.poll():
+            pose_points = pose_pipe.recv()
+            pose_points_old = pose_points
+        else:
+            pose_points = pose_points_old
+
+        # datum.cvInputData = color_image
+        # opWrapper.emplaceAndPop([datum])
+        # pose_points = datum.poseKeypoints
         black_image = np.zeros((720, 1280, 3), dtype=np.uint8)
 
         if pose_points.ndim != 3:
@@ -210,12 +217,12 @@ if __name__ == "__main__":
     openpose_params = set_openpose(arguments)
     image_pipe_parent, image_pipe_child = Pipe()
     pose_pipe_parent, pose_pipe_child = Pipe()
-    # p_1 = Process(
-    #     target=run_openpose,
-    #     daemon=True,
-    #     args=(openpose_params, image_pipe_child, pose_pipe_child),
-    # )
-    # p_1.start()
+    p_1 = Process(
+        target=run_openpose,
+        daemon=True,
+        args=(openpose_params, image_pipe_child, pose_pipe_child),
+    )
+    p_1.start()
     message = project_visuals(
         data_file=arguments[0].data_file,
         image_pipe=image_pipe_parent,
