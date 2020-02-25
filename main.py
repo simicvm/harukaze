@@ -76,6 +76,18 @@ def parse_arguments():
         help="Enable for lower latency."
     )
     parser.add_argument(
+        "--op-output-resolution",
+        default="-1x-1",
+        type=str,
+        help="The image resolution to output and scale results to"
+    )
+    parser.add_argument(
+        "--op-keypoint-scale",
+        default=0,
+        type=int,
+        help="Scaling to the output coordinates."
+    )
+    parser.add_argument(
         "--otput-pose-dir",
         default="~/harukaze/output",
         type=str,
@@ -97,7 +109,7 @@ def set_openpose(args):
         if arg.startswith("op_"):
             val = getattr(args[0], arg)
             if val is not None:
-                argument = arg.strip("op_")
+                argument = arg.replace("op_", "")
                 params[argument] = val
     return params
 
@@ -175,6 +187,10 @@ def project_visuals(
     while True:
         start_time = time.time()
         _, color_image = get_image(pipe)
+        # Not sure if this resizing is useful here. On the one hand I moved the resizing
+        # from the OP process to the main one. On the other hand there is much less data
+        # to be serialized and sent over the pipe.
+        color_image = cv2.resize(color_image, (464, 256), interpolation=cv2.INTER_LINEAR)
 
         image_pipe.send(color_image)
         if pose_pipe.poll():
