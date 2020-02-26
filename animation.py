@@ -37,6 +37,6 @@ class Animation():
     def draw_pose(self, frame):
 
         for joint in self.pose.joints.values():
-            cv2.circle(frame, (joint.x, joint.y), 10, (0,255,0), -1)
+            cv2.circle(frame, (int(joint.position[0]), int(joint.position[1])), 10, (0,255,0), -1)
 
         return frame
