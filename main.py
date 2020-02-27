@@ -8,8 +8,10 @@ from multiprocessing import Process, Queue, Manager, Pipe
 import cv2
 import numpy as np
 import pyrealsense2 as rs
+from openpose import pyopenpose as op
 
 from animation import set_animation
+from calibrator import set_calibrator
 
 
 def parse_arguments():
@@ -68,10 +70,10 @@ def parse_arguments():
         help="Absolute path to the desired output folder.",
     )
     parser.add_argument(
-        "--data-file",
+        "--data-path",
         default=None,
         type=str,
-        help="Absolute path to the video file.",
+        help="Absolute path to the folder containing source video and (optionally) pose files.",
     )
     return parser.parse_known_args()
 
@@ -139,26 +141,49 @@ def get_image_from_realsense(pipe):
     return None, color_image
 
 
+def get_pose_from_openpose(pose_pipe, _):
+    if pose_pipe.poll():
+        pose_points = pose_pipe.recv()
+        pose_points_old = pose_points
+    else:
+        pose_points = pose_points_old
+    return pose_points_old, pose_points
+
+
+def get_pose_from_file(_, i):
+    json_path = inference_files[i]
+    animation.update_pose_from_json(json_path)
+    return None
+
+
 def project_visuals(
-        data_file=None,
+        video_file=None,
+        pose_files=None,
         frame_name="Frame",
         openpose_params=None,
         image_pipe=None,
         pose_pipe=None,
         animation=None
 ):
-    if data_file is None:
+    if video_file is None:
         stream, pipe, profile = initialize_realsense(frame_name=frame_name)
         get_image = get_image_from_realsense
-    elif os.path.isfile(data_file):
-        cap = cv2.VideoCapture(data_file)
+        get_pose = get_pose_from_openpose
+
+    elif os.path.isfile(video_file):
+        cap = cv2.VideoCapture(video_file)
         get_image = lambda x: cap.read()
         pipe = None
+        if pose_files is not None:
+            get_pose = get_pose_from_file
+
     else:
         return "Error, running mode not specified properly!"
 
     # datum, opWrapper = initialize_openpose(openpose_params)
     pose_points_old = np.zeros((720, 1280, 3), dtype=np.uint8)
+
+    i = 0
     while True:
         start_time = time.time()
         _, color_image = get_image(pipe)
@@ -168,11 +193,7 @@ def project_visuals(
         color_image = cv2.resize(color_image, (464, 256), interpolation=cv2.INTER_LINEAR)
 
         image_pipe.send(color_image)
-        if pose_pipe.poll():
-            pose_points = pose_pipe.recv()
-            pose_points_old = pose_points
-        else:
-            pose_points = pose_points_old
+        pose_points_old, pose_points = get_pose(pose_pipe, i)
 
         # datum.cvInputData = color_image
         # opWrapper.emplaceAndPop([datum])
@@ -189,6 +210,7 @@ def project_visuals(
             "FPS: ", 1.0 / (time.time() - start_time)
         )  # FPS = 1 / time to process loop
 
+        i += 1
         key = cv2.waitKey(1)
         if key == ord("q"):
             stream.release()
@@ -199,6 +221,14 @@ def project_visuals(
 if __name__ == "__main__":
     arguments = parse_arguments()
     openpose_params = set_openpose(arguments)
+
+    if arguments.data_path is not None:
+        data_path = arguments.data_path
+        assert os.path.isdir(data_path), "Data folder does not exist."
+        pose_files = sorted([f for f in os.listdir(data_path) if f.endswith(".json")])
+        video_file = [f for f in os.listdir(data_path) if f.endswith(".avi")]
+        assert len(video_file) == 1, "Data path has to contain only one video!"
+
     image_pipe_parent, image_pipe_child = Pipe()
     pose_pipe_parent, pose_pipe_child = Pipe()
     p_1 = Process(
@@ -207,13 +237,15 @@ if __name__ == "__main__":
         args=(openpose_params, image_pipe_child, pose_pipe_child),
     )
     p_1.start()
+
     animation = set_animation()
     message = project_visuals(
-        data_file=arguments[0].data_file,
+        video_file=video_file[0],
+        pose_files=pose_files,
         image_pipe=image_pipe_parent,
         pose_pipe=pose_pipe_parent,
         openpose_params=openpose_params,
         animation=animation
     )
     print(message)
-    # p_1.join()
+    p_1.join()
