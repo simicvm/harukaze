@@ -1,30 +1,14 @@
 import cv2
 import random
 import numpy as np
+import time
 
+DEBUG = False
 
 class Drawable():
-    def __init__(self, x, y, name):
-        self.x = x
-        self.y = y
+    def __init__(self, position, name):
         self.name = name
-
-
-class Chaser(Drawable):
-    """
-        contains update method for chasing ball (to anchor)
-    """
-
-    speed = 0.25
-
-    def __init__(self, chase_to, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.chase_to = chase_to
-
-    def update(self):
-        if self.chase_to is not None:
-            self.x += int((self.chase_to.x - self.x)*self.speed)
-            self.y += int((self.chase_to.y - self.y)*self.speed)
+        self.position = position.astype(np.float64)
 
 
 class ChaserSpinningMiddleHands(Drawable):
@@ -32,225 +16,184 @@ class ChaserSpinningMiddleHands(Drawable):
         contains update method for chasing ball (to anchor)
     """
 
-    speed = 0.2
-
-    n_circles = 30
     step = 0
-    angular_speed = 0.4
-    center_radius = 100
-    size_parameter = 1
 
-    hand_to_hand = 0
-    hand_to_hand_sensitivity = 500
+    """ 
+
+    n_circles_parameter = 1 # times hand_to_hand distance 
+    min_n_circles = 5
+    
+    max_angular_speed = 0.2
+
+    center_radius_parameter = 1
+    min_center_radius = 5
+    max_center_radius = 100
+
+    circle_size_parameter = 1
+    min_circle_size = 5
+    max_circle_size = 10
+
+    """    
+
+    # drawing parameters
+    n_circles_parameter = 1 # times hand_to_hand distance 
+    min_n_circles = 5
+    max_n_circles = 100
+    n_circles = 1
+    max_n_circles_delta = 5
+    
+    max_angular_speed = 0.05 #0.015 * np.pi
+
+    center_radius_parameter = 1.3
+    min_center_radius = 2
+    max_center_radius = 150
+
+    circle_size_parameter = 0.004
+    min_circle_size = 5
+    max_circle_size = 30
+
+    color_a = (0, 0, 190)
+    color_b = (0, 0, 0)
+
+    # physics parameters
+    position = np.array([0., 0])
+    velocity = np.array([0., 0])
+    acceleration = np.array([0., 0])
+    forces = []
+    mass = 5
+
+    max_speed = 6
+    max_force = 7
+    min_distance = 5
+
+    land_distance = 50
+
 
     def __init__(self, left_hand, right_hand, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.left_hand = left_hand
         self.right_hand = right_hand
-
+        self.update()
 
     def draw(self, frame, allow_transparency):
 
-        for i in range(self.n_circles, 0, -1):
-            
-            angle = 2*np.pi*(1.0 * i / self.n_circles) * self.step * self.angular_speed
+        if DEBUG:
+            self._draw_circle(frame, self.position, 50, self.color, -1)
+            self._draw_circle(frame, self.chase_to, 10, (255, 255, 255), -1)
+        
+
+        for i in range(self.n_circles, 0, -1): # we want to print bigger circles first
+
+            angle = 2 * np.pi * i * self.angular_speed * self.step / self.n_circles
 
             if i%2:
-                color = (0, 0, 190)
+                color = self.color_a
             else:
-                color = (0, 0, 0)
+                color = self.color_b
 
-            x, y = pol2cart(self.center_radius * self.hand_to_hand / 100, angle)
-            center = (int(self.x + x), int(self.y + y))
-
-            size = int(self.size_parameter * i * self.hand_to_hand / 100)
-
-            self.n_circles = int(self.hand_to_hand) + 1
-
+            center = self.position + pol2cart(self.center_radius, angle)
+            size = self.circle_size * i
+            
             if allow_transparency:
                 overlay = frame.copy()
                 cv2.circle(overlay, center, size, color, -1)
                 alpha = 1 - (i/self.n_circles)
                 frame = cv2.addWeighted(overlay, alpha, frame, 1 - alpha, 0)
             else:
-                cv2.circle(frame, center, size, color, -1)
-
-        self.step += 1
+                self._draw_circle(frame, center, size, color, -1)
 
         return frame
 
+    def update_chase(self):
+        """
+            finding the point between two (right and left hand positions)
+        """
+        self.hand_to_hand_distance = self.right_hand.position - self.left_hand.position
+        self.hand_to_hand_distance_norm = np.linalg.norm(self.hand_to_hand_distance)
 
-    def update(self):
+        if self.hand_to_hand_distance_norm > 0:
+            self.distance_unit = self.hand_to_hand_distance / self.hand_to_hand_distance_norm
+            self.chase_to = self.left_hand.position + self.distance_unit * (self.hand_to_hand_distance_norm / 2)
+        else:
+            self.chase_to = self.left_hand.position
+
+        self.distance_to_chase = self.chase_to - self.position
+        self.distance_to_chase_norm = np.linalg.norm(self.distance_to_chase)
+        self.distance_to_chase_unit = self.distance_to_chase / self.distance_to_chase_norm
+
+    def update_drawing_parameters(self):
         
-        new_hand_to_hand = ((self.left_hand.x - self.right_hand.x)**2 + (self.left_hand.y - self.right_hand.y)**2)**0.5
-        delta_hand_to_hand = new_hand_to_hand - self.hand_to_hand
+        new_n_circles = max(
+            int(self.hand_to_hand_distance_norm/self.n_circles_parameter), 
+            self.min_n_circles
+        )
 
-        if abs(delta_hand_to_hand) < self.hand_to_hand_sensitivity:
-            self.hand_to_hand += delta_hand_to_hand * 0.2
+        new_n_circles = min(new_n_circles, self.max_n_circles)
 
-        if self.left_hand.x >= self.right_hand.x:
-            chase_to_x = self.right_hand.x + (self.left_hand.x - self.right_hand.x)/2
-        else: 
-            chase_to_x = self.left_hand.x + (self.right_hand.x - self.left_hand.x)/2
+        if abs(new_n_circles - self.n_circles) < self.max_n_circles_delta:
+            self.n_circles = new_n_circles
+        else:
+            self.n_circles += self.max_n_circles_delta * np.sign(new_n_circles - self.n_circles)
 
-        if self.left_hand.y >= self.right_hand.y:
-            chase_to_y = self.right_hand.y + (self.left_hand.y - self.right_hand.y)/2
-        else: 
-            chase_to_y = self.left_hand.y + (self.right_hand.y - self.left_hand.y)/2
+        self.angular_speed = self.max_angular_speed
+
+        center_radius = self.center_radius_parameter * self.hand_to_hand_distance_norm
+        self.center_radius = max(center_radius, self.min_center_radius)
+        self.center_radius = min(center_radius, self.max_center_radius)
+
+        circle_size = self.hand_to_hand_distance_norm * self.circle_size_parameter
+        circle_size = min(circle_size, self.max_circle_size)
+        circle_size = max(circle_size, self.min_circle_size)
+        self.circle_size = circle_size
         
-        # chase_to_x = (self.left_hand.x - self.right_hand.x)/2
-        # chase_to_y = (self.left_hand.y - self.right_hand.y)/2
-        
-        self.x += int((chase_to_x - self.x)*self.speed)
-        self.y += int((chase_to_y - self.y)*self.speed)
-
-
-
-
-class Fixed(Drawable):
-    """
-        contains update method for fixed ball to an anchor
-    """
-    def __init__(self, fixed_to, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.fixed_to = fixed_to
-
     def update(self):
-        if self.fixed_to is not None:
-            self.x = self.fixed_to.x
-            self.y = self.fixed_to.y
-
-
-class Random(Drawable):
-    """
-        contains update method for random walking ball
-    """
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-
-    def update(self):
-        self.x += random.choice(range(-10, 10))
-        self.y += random.choice(range(-10, 10))
-
-
-
-
-class Spinning(Drawable):
-    """
-        contains draw method for spinning ball
-    """
-
-    # n_circles = 20
-    n_circles = 30
-    step = 0
-    angular_speed = 1
-    center_radius = 100
-    size_parameter = 1
-
-    """
-    configurations:
-
-
-    center_radius: 100
-    size_parameter: 1
-    angular_speed: 1
-    n_circles: 30
-
-
-    """
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-
-    def draw(self, frame, allow_transparency):
-
-        for i in range(self.n_circles, 0, -1):
-
-            overlay = frame.copy()
-
-            angle = 2*np.pi*(1.0 * i / self.n_circles) * self.step * self.angular_speed
-
-            if i%2:
-                color = (0, 0, 190)
-            else:
-                color = (0, 0, 0)
-
-            x, y = pol2cart(self.center_radius, angle)
-            center = (int(self.x + x), int(self.y + y))
-
-            size = self.size_parameter*i
-
-            if allow_transparency:
-                cv2.circle(overlay, center, size, color, -1)
-                alpha = 1 - (i/self.n_circles)
-                frame = cv2.addWeighted(overlay, alpha, frame, 1 - alpha, 0)
-            else:
-                cv2.circle(frame, center, size, color, -1)
-
+        self.update_chase()
+        self.update_position()
+        self.update_drawing_parameters()
         self.step += 1
 
-        return frame
+    def get_steer_force(self):
+        """
+            steer force 
+        """
 
+        if self.distance_to_chase_norm < self.min_distance:
+            return np.array([0, 0])
+        
+        if self.distance_to_chase_norm < self.land_distance:
+            self.speed = np.interp(self.distance_to_chase_norm, [0, self.land_distance], [0, self.max_speed])
+        else:
+            self.speed = self.max_speed
 
-# class Katana():
+        desired_velocity = self.distance_to_chase_unit * self.speed
 
-#     katana_length = 100
+        steer_force = desired_velocity - self.velocity
+        steer_force_norm = np.linalg.norm(steer_force)
+        
+        if steer_force_norm > self.max_force:
+            steer_force = steer_force / steer_force_norm * self.max_force
+        
+        return steer_force
 
-#     def __init__(self, fixed_elbow, fixed_hand, name):
-#         # self.elbow_x = fixed_elbow.x
-#         # self.elbow_y = fixed_elbow.y
+    def update_position(self):
 
-#         # self.elbow_x = fixed_elbow.x
-#         # self.elbow_y = fixed_elbow.y
-#         self.fixed_hand = fixed_hand
-#         self.fixed_elbow = fixed_elbow
-#         self.name = name
+        self.forces.append(self.get_steer_force())
 
-#     def update(self):
-#         self.elbow_x = self.fixed_elbow.x
-#         self.elbow_y = self.fixed_elbow.y
+        for force in self.forces:
+            self.acceleration += force / self.mass
 
-#         self.hand_x = self.fixed_hand.x
-#         self.hand_y = self.fixed_hand.y
+        self.velocity += self.acceleration
+        self.position += self.velocity
 
-#     def draw(self, frame):
-#         cv2.circle(frame, (self.elbow_x, self.elbow_y), 2, (255, 255, 255), -1)
-#         cv2.circle(frame, (self.hand_x, self.hand_y), 2, (255, 255, 255), -1)
+        self.acceleration *= 0
+        self.forces = []
 
-#         dx = self.hand_x - self.elbow_x
-#         dy = self.hand_y - self.elbow_y
-
-#         length = (dx*dx+dy*dy)**0.5
-
-#         unit_x = dx/length
-#         unit_y = dy/length
-
-#         cv2.line(frame, (self.hand_x, self.hand_y), (self.elbow_x, self.elbow_y), (0, 0, 255), 10)
-
-
-#         print(length)
-#         # exit()
-#         return frame
-
-
-class SpinningChaserBall(Chaser, Spinning):
-    def __init__(self, x, y, chase_to, name):
-        super().__init__(x=x, y=y, chase_to=chase_to, name=name)
-
-
-# class SpinningChaserMiddleHands(ChaserMiddleHands, Spinning):
-#     def __init__(self, x, y, left_hand, right_hand, name):
-#         super().__init__(x=x, y=y, left_hand=left_hand, right_hand=right_hand, name=name)
-
-
-class SpinningFixedBall(Fixed, Spinning):
-    def __init__(self, x, y, fixed_to, name):
-        super().__init__(x=x, y=y, fixed_to=fixed_to, name=name)
-
-
-class SpinningRandomBall(Random, Spinning):
-    def __init__(self, x, y, name):
-        super().__init__(x=x, y=y, name=name)
+    @staticmethod
+    def _draw_circle(frame, center, size, color, width):
+        x = np.rint(center[0]).astype(np.int64)
+        y = np.rint(center[1]).astype(np.int64)
+        size = np.rint(size).astype(np.int64)
+        cv2.circle(frame, (x, y), size, color, width)
 
 
 def cart2pol(x, y):
@@ -261,7 +204,7 @@ def cart2pol(x, y):
 def pol2cart(rho, phi):
     x = rho * np.cos(phi)
     y = rho * np.sin(phi)
-    return(x, y)
+    return np.array([x, y])
 
 
 if __name__ == "__main__":

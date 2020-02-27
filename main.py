@@ -9,33 +9,7 @@ import cv2
 import numpy as np
 import pyrealsense2 as rs
 
-from pose import Pose, pose_points_from_json
-from animation import Animation
-from drawables import SpinningChaserBall, SpinningFixedBall, SpinningRandomBall, ChaserSpinningMiddleHands
-
-if sys.platform == "linux":
-    from openpose import pyopenpose as op
-elif sys.platform == "darwin":
-    print("Running without OpenPose module.")
-else:
-    print("Platform not recognized. Terminating!")
-    sys.exit()
-
-pose = Pose()
-animation = Animation()
-animation.add_pose(pose)
-
-
-animation.objects.append(
-    ChaserSpinningMiddleHands(name="ball_1", right_hand=pose.joints["right_hand"], left_hand=pose.joints["left_hand"], x=300, y=300)
-)
-# animation.objects.append(
-#     SpinningChaserBall(name="ball_1", chase_to=pose.joints["right_hand"], x=300, y=300)
-# )
-# animation.objects.append(
-#     SpinningChaserBall(name="ball_2", chase_to=pose.joints["left_hand"], x=300, y=300)
-# )
-# animation.objects.append(SpinningChaserBall(name="ball_3", chase_to=pose.joints["head"], x=300, y=300))
+from animation import set_animation
 
 
 def parse_arguments():
@@ -171,6 +145,7 @@ def project_visuals(
         openpose_params=None,
         image_pipe=None,
         pose_pipe=None,
+        animation=None
 ):
     if data_file is None:
         stream, pipe, profile = initialize_realsense(frame_name=frame_name)
@@ -204,16 +179,9 @@ def project_visuals(
         # pose_points = datum.poseKeypoints
         black_image = np.zeros((720, 1280, 3), dtype=np.uint8)
 
-        if pose_points.ndim != 3:
-            continue
-        pose_points = pose_points[0]
-        if len(pose_points) == 25:
-            animation.update_pose(pose_points)
+        animation.update_pose(pose_points)
         # animation.draw_pose(color_image)
-        # animation.draw_pose(black_image)
-        animation.update()
-        # color_image = animation.draw(color_image)
-        color_image = animation.draw(black_image)
+        color_image = animation.draw(color_image)
 
         cv2.imshow(frame_name, color_image)
 
@@ -239,11 +207,13 @@ if __name__ == "__main__":
         args=(openpose_params, image_pipe_child, pose_pipe_child),
     )
     p_1.start()
+    animation = set_animation()
     message = project_visuals(
         data_file=arguments[0].data_file,
         image_pipe=image_pipe_parent,
         pose_pipe=pose_pipe_parent,
-        openpose_params=openpose_params
+        openpose_params=openpose_params,
+        animation=animation
     )
     print(message)
     # p_1.join()

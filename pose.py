@@ -1,31 +1,45 @@
 from collections import namedtuple
 import os
 import json
+import numpy as np
 
+import time
 
 class Joint():
-    x, y = 0, 0
 
-    sensitivity = 1000
+    position = np.array([0, 0])
+    previous_position = np.array([0, 0])
+
+    position_delta = position - previous_position
+    position_delta_norm = np.linalg.norm(position_delta)
+
+    sensitivity = 20
+    max_skips = 3
+    skip_n = 0
 
     def __init__(self, name, idx):
         self.name = name
         self.idx = idx
 
-    def update(self, x, y):
+    def update(self, position):
 
-        if abs(x - self.x) < self.sensitivity and x != 0:
-            self.x = x
+        if sum(position) > 0:
 
-        if abs(y - self.y) < self.sensitivity and y != 0:
-            self.y = y
+            position_delta = position - self.position
+            position_delta_norm = np.linalg.norm(position_delta)
 
-        
-
+            if position_delta_norm < self.sensitivity or self.skip_n == self.max_skips:
+                self.previous_position = self.position
+                self.position = position
+                self.position_delta = position_delta
+                self.position_delta_norm = position_delta_norm
+                self.skip_n = 0
+            else:
+                self.skip_n += 1
 
 class Pose():
 
-    force_int = True
+    expected_pose_points = 25 # number of pose points being passed
 
     joints = {
         "right_hand": Joint("right_hand", 7),
@@ -40,40 +54,42 @@ class Pose():
 
     def update_joints(self, pose_points):
 
+        if len(pose_points) != self.expected_pose_points:
+            return
+
         for joint_name, joint in self.joints.items():
-            # print("updating {}".format(joint_name))
             idx = joint.idx
             pose_point = pose_points[idx]
-            x, y = pose_point[:2]
+            position = np.array(pose_point[:2])
+            joint.update(position)
 
-            if self.force_int:
-                x = int(x)
-                y = int(y)
+    def update_joints_from_json(self, json_path):
+        pose_points = self.pose_points_from_json(json_path)
+        self.update_joints(pose_points)
 
-            joint.update(x, y)
+    @staticmethod
+    def pose_points_from_json(json_path):
+        def _split_points(points):
+            return [points[x:x+3] for x in range(0, len(points), 3)]
 
+        with open(json_path) as f:
+            inference = json.load(f)
 
-def pose_points_from_json(json_path):
-
-    def _split_points(points):
-        return [points[x:x+3] for x in range(0, len(points), 3)]
-
-    with open(json_path) as f:
-      inference = json.load(f)
-
-    person_inference = inference.get("people", [{}])[0]
-    points = person_inference.get("pose_keypoints_2d", [])
-    return _split_points(points)
+        person_inference = inference.get("people", [{}])[0]
+        points = person_inference.get("pose_keypoints_2d", [])
+        return _split_points(points)
+        
 
 
 if __name__ == "__main__":
-    inference_directory = 'data/pose_output/output'
+
+    inference_directory = '../data/pose_output/output'
     inference_files = sorted([os.path.join(inference_directory, f) for f in os.listdir(inference_directory)])
 
     pose = Pose()
 
     for json_file in inference_files:
-        print(pose)
+        # print(pose)
         pose_points_ = pose_points_from_json(json_file)
 
         pose.update_joints(pose_points_)
