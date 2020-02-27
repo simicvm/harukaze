@@ -28,8 +28,6 @@ class Joint():
             position_delta = position - self.position
             position_delta_norm = np.linalg.norm(position_delta)
 
-            print("previous_position_delta: {}".format(position_delta_norm))
-
             if position_delta_norm < self.sensitivity or self.skip_n == self.max_skips:
                 self.previous_position = self.position
                 self.position = position
@@ -37,18 +35,11 @@ class Joint():
                 self.position_delta_norm = position_delta_norm
                 self.skip_n = 0
             else:
-                print("skipping: {}".format(self.name))
                 self.skip_n += 1
-            # else:
-            #     exit()
-        
-        # print(self.position, self.previous_position, self.position_delta, self.position_delta)
-        # time.sleep(0.1)
-
 
 class Pose():
 
-    # force_int = True
+    expected_pose_points = 25 # number of pose points being passed
 
     joints = {
         "right_hand": Joint("right_hand", 7),
@@ -63,35 +54,31 @@ class Pose():
 
     def update_joints(self, pose_points):
 
+        if len(pose_points) != self.expected_pose_points:
+            return
+
         for joint_name, joint in self.joints.items():
-            # print("updating {}".format(joint_name))
             idx = joint.idx
             pose_point = pose_points[idx]
-            # x, y = pose_point[:2]
-
             position = np.array(pose_point[:2])
-
-            # if self.force_int:
-
-                # x = int(x)
-                # y = int(y)
-
             joint.update(position)
 
+    def update_joints_from_json(self, json_path):
+        pose_points = self.pose_points_from_json(json_path)
+        self.update_joints(pose_points)
+
+    @staticmethod
+    def pose_points_from_json(json_path):
+        def _split_points(points):
+            return [points[x:x+3] for x in range(0, len(points), 3)]
+
+        with open(json_path) as f:
+            inference = json.load(f)
+
+        person_inference = inference.get("people", [{}])[0]
+        points = person_inference.get("pose_keypoints_2d", [])
+        return _split_points(points)
         
-
-
-def pose_points_from_json(json_path):
-
-    def _split_points(points):
-        return [points[x:x+3] for x in range(0, len(points), 3)]
-
-    with open(json_path) as f:
-      inference = json.load(f)
-
-    person_inference = inference.get("people", [{}])[0]
-    points = person_inference.get("pose_keypoints_2d", [])
-    return _split_points(points)
 
 
 if __name__ == "__main__":

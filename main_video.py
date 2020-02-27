@@ -10,31 +10,7 @@ import numpy as np
 import pyrealsense2 as rs
 # from openpose import pyopenpose as op
 
-from pose import Pose, pose_points_from_json
-from animation import Animation
-from drawables import ChaserSpinningMiddleHands
-
-
-pose = Pose()
-animation = Animation()
-animation.add_pose(pose)
-
-
-animation.objects.append(
-    ChaserSpinningMiddleHands(
-        name="ball_1", 
-        right_hand=pose.joints["right_hand"], 
-        left_hand=pose.joints["left_hand"], 
-        position=np.array([500,500])
-    )
-)
-# animation.objects.append(
-#     SpinningChaserBall(name="ball_1", chase_to=pose.joints["right_hand"], x=300, y=300)
-# )
-# animation.objects.append(
-#     SpinningChaserBall(name="ball_2", chase_to=pose.joints["left_hand"], x=300, y=300)
-# )
-# animation.objects.append(SpinningChaserBall(name="ball_3", chase_to=pose.joints["head"], x=300, y=300))
+from animation import set_animation
 
 
 def parse_arguments():
@@ -118,6 +94,8 @@ def project_visuals(
     inference_files = sorted([os.path.join(inference_directory, f) for f in os.listdir(inference_directory)])
     data_file = '../data/ai_office_dance.avi'
 
+    animation = set_animation()
+
     print(data_file)
 
     cap = cv2.VideoCapture(data_file)
@@ -130,10 +108,12 @@ def project_visuals(
         width, height = color_image.shape[:2]
         
         json_path = inference_files[i]
-        pose_points = pose_points_from_json(json_path)
+        # pose_points = pose_points_from_json(json_path)
 
-        if len(pose_points) == 25:
-            animation.update_pose(pose_points)
+        # if len(pose_points) == 25:
+        #     animation.update_pose(pose_points)
+
+        animation.update_pose_from_json(json_path)
 
         animation.draw_pose(color_image)
         animation.update()
@@ -147,10 +127,17 @@ def project_visuals(
 
         key = cv2.waitKey(1)
         if key == ord("q"):
-            stream.release()
+            # stream.release()
             cv2.destroyAllWindows()
-            return "Closing the app, user pressed 'q' key!"
+            print("Closing the app, user pressed 'q' key!")
+            return
 
+        if key == ord("a"):
+            print("user pressed 'a' key!")
+
+        if key == ord("1"):
+            print("user pressed '1' key!")
+        
         i += 1
         time.sleep(0.005)
 

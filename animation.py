@@ -1,8 +1,29 @@
 from collections import namedtuple
 import cv2
 import json
+from pose import Pose
+import numpy as np
 
 from pose import Pose
+# from animation import Animation
+from drawables import ChaserSpinningMiddleHands
+
+
+def set_animation():
+
+    pose = Pose()
+    animation = Animation()
+    animation.add_pose(pose)
+
+    animation.objects.append(
+        ChaserSpinningMiddleHands(
+            name="ball_1", 
+            right_hand=pose.joints["right_hand"], 
+            left_hand=pose.joints["left_hand"], 
+            position=np.array([500,500])
+        )
+    )
+    return animation
 
 
 class Animation():
@@ -23,6 +44,10 @@ class Animation():
     def update_pose(self, pose_points):
         if self.pose is not None:
             self.pose.update_joints(pose_points)
+
+    def update_pose_from_json(self, json_path):
+        if self.pose is not None:
+            self.pose.update_joints_from_json(json_path)
 
     def update(self):
         for obj in self.objects:

@@ -42,11 +42,11 @@ class ChaserSpinningMiddleHands(Drawable):
     n_circles = 1
     max_n_circles_delta = 5
     
-    max_angular_speed = 0.02 #0.015 * np.pi
+    max_angular_speed = 0.05 #0.015 * np.pi
 
     center_radius_parameter = 1.3
     min_center_radius = 2
-    max_center_radius = 200
+    max_center_radius = 150
 
     circle_size_parameter = 0.004
     min_circle_size = 5
@@ -84,7 +84,7 @@ class ChaserSpinningMiddleHands(Drawable):
 
         for i in range(self.n_circles, 0, -1): # we want to print bigger circles first
 
-            angle = 2*np.pi*(1.0 * i / self.n_circles) * self.step * self.angular_speed
+            angle = 2 * np.pi * i * self.angular_speed * self.step / self.n_circles
 
             if i%2:
                 color = self.color_a
@@ -180,7 +180,6 @@ class ChaserSpinningMiddleHands(Drawable):
         self.forces.append(self.get_steer_force())
 
         for force in self.forces:
-            print(force)
             self.acceleration += force / self.mass
 
         self.velocity += self.acceleration
@@ -194,7 +193,6 @@ class ChaserSpinningMiddleHands(Drawable):
         x = np.rint(center[0]).astype(np.int64)
         y = np.rint(center[1]).astype(np.int64)
         size = np.rint(size).astype(np.int64)
-        print(x, y, size)
         cv2.circle(frame, (x, y), size, color, width)
 
 
