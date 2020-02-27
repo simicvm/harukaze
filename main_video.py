@@ -11,6 +11,7 @@ import pyrealsense2 as rs
 # from openpose import pyopenpose as op
 
 from animation import set_animation
+from callibrator import set_callibrator
 
 
 def parse_arguments():
@@ -95,6 +96,7 @@ def project_visuals(
     data_file = '../data/ai_office_dance.avi'
 
     animation = set_animation()
+    callibrator = set_callibrator()
 
     print(data_file)
 
@@ -105,58 +107,33 @@ def project_visuals(
         start_time = time.time()
 
         ret, color_image = cap.read()
-        width, height = color_image.shape[:2]
         
         json_path = inference_files[i]
-        # pose_points = pose_points_from_json(json_path)
-
-        # if len(pose_points) == 25:
-        #     animation.update_pose(pose_points)
 
         animation.update_pose_from_json(json_path)
 
         animation.draw_pose(color_image)
         animation.update()
-        color_image = animation.draw(color_image)
+
+        if callibrator.callibrating:
+            callibrator.display_callibration(color_image)
+
+        color_image = callibrator.callibrate(color_image)
 
         cv2.imshow(frame_name, color_image)
 
-        print(
-            "FPS: ", 1.0 / (time.time() - start_time)
-        )  # FPS = 1 / time to process loop
-
         key = cv2.waitKey(1)
         if key == ord("q"):
-            # stream.release()
             cv2.destroyAllWindows()
             print("Closing the app, user pressed 'q' key!")
             return
 
-        if key == ord("a"):
-            print("user pressed 'a' key!")
+        callibrator.key_handler(key)
 
-        if key == ord("1"):
-            print("user pressed '1' key!")
-        
         i += 1
         time.sleep(0.005)
 
+
 if __name__ == "__main__":
-    # arguments = parse_arguments()
-    # openpose_params = set_openpose(arguments)
-    # q = Queue()
-    # image_pipe_send, image_pipe_receive = Pipe()
-    # pose_pipe_send, pose_pipe_receive = Pipe()
-    # p_1 = Process(
-    #     target=run_openpose,
-    #     daemon=True,
-    #     args=(openpose_params, image_pipe_receive, pose_pipe_send),
-    # )
-    # p_1.start()
-    # message = project_visuals(
-    #     run_live=True, image_pipe=image_pipe_send, pose_pipe=pose_pipe_receive
-    # )
-    # print(message)
-    # p_1.join()
 
     project_visuals()
