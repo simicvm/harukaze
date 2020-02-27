@@ -5,7 +5,6 @@ from pose import Pose
 import numpy as np
 
 from pose import Pose
-# from animation import Animation
 from drawables import ChaserSpinningMiddleHands
 
 
@@ -60,7 +59,6 @@ class Animation():
         return frame
 
     def draw_pose(self, frame):
-
         for joint in self.pose.joints.values():
             cv2.circle(frame, (int(joint.position[0]), int(joint.position[1])), 10, (0,255,0), -1)
 

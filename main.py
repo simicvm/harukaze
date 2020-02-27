@@ -8,23 +8,24 @@ from multiprocessing import Process, Queue, Manager, Pipe
 import cv2
 import numpy as np
 import pyrealsense2 as rs
-from openpose import pyopenpose as op
+# from openpose import pyopenpose as op
 
-from pose import Pose, pose_points_from_json
-from animation import Animation
-from drawables import SpinningChaserBall, SpinningFixedBall, SpinningRandomBall
+from animation import set_animation
 
+# from pose import Pose, pose_points_from_json
+# from animation import Animation
+# from drawables import SpinningChaserBall, SpinningFixedBall, SpinningRandomBall
 
-pose = Pose()
-animation = Animation()
-animation.add_pose(pose)
+# pose = Pose()
+# animation = Animation()
+# animation.add_pose(pose)
 
-animation.objects.append(
-    SpinningChaserBall(name="ball_1", chase_to=pose.joints["right_hand"], x=300, y=300)
-)
-animation.objects.append(
-    SpinningChaserBall(name="ball_2", chase_to=pose.joints["left_hand"], x=300, y=300)
-)
+# animation.objects.append(
+#     SpinningChaserBall(name="ball_1", chase_to=pose.joints["right_hand"], x=300, y=300)
+# )
+# animation.objects.append(
+#     SpinningChaserBall(name="ball_2", chase_to=pose.joints["left_hand"], x=300, y=300)
+# )
 # animation.objects.append(SpinningChaserBall(name="ball_3", chase_to=pose.joints["head"], x=300, y=300))
 
 
@@ -100,7 +101,8 @@ def project_visuals(
         data_file=None,
         frame_name="Frame",
         image_pipe=None,
-        pose_pipe=None
+        pose_pipe=None,
+        animation=None
 ):
     if run_live:
         stream, pipe, profile = initialize_realsense(frame_name)
@@ -118,13 +120,16 @@ def project_visuals(
         image_pipe.send(color_image)
         pose_points = pose_pipe.recv()
 
-        if pose_points.ndim != 3:
-            continue
-        pose_points = pose_points[0]
-        if len(pose_points) == 25:
-            animation.update_pose(pose_points)
-        animation.draw_pose(color_image)
-        animation.update()
+        # if pose_points.ndim != 3:
+        #     continue
+        # pose_points = pose_points[0]
+        # if len(pose_points) == 25:
+        #     animation.update_pose(pose_points)
+        # animation.draw_pose(color_image)
+        # animation.update()
+
+        animation.update_pose(pose_points)
+        # animation.draw_pose(color_image)
         color_image = animation.draw(color_image)
 
         cv2.imshow(frame_name, color_image)
@@ -152,8 +157,9 @@ if __name__ == "__main__":
         args=(openpose_params, image_pipe_receive, pose_pipe_send),
     )
     p_1.start()
+    animation = set_animation()
     message = project_visuals(
-        run_live=True, image_pipe=image_pipe_send, pose_pipe=pose_pipe_receive
+        run_live=True, image_pipe=image_pipe_send, pose_pipe=pose_pipe_receive, animation=animation
     )
     print(message)
     p_1.join()
