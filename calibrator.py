@@ -7,19 +7,19 @@ br = None
 bl = None
 
 
-def set_callibrator(tl=tl, tr=tr, br=br, bl=bl):
-    return Callibrator(tl=tl, tr=tr, br=br, bl=bl)
+def set_calibrator(tl=tl, tr=tr, br=br, bl=bl):
+    return Calibrator(tl=tl, tr=tr, br=br, bl=bl)
 
 
-class Callibrator():
+class Calibrator():
 
     unit = 5
 
-    callibrating = False
-    callibrating_tl = False
-    callibrating_tr = False
-    callibrating_br = False
-    callibrating_bl = False
+    calibrating = False
+    calibrating_tl = False
+    calibrating_tr = False
+    calibrating_br = False
+    calibrating_bl = False
 
     def __init__(self, tl=None, tr=None, br=None, bl=None):
         if tl is None:
@@ -31,11 +31,11 @@ class Callibrator():
         if bl is None:
             self.bl = [0,0]
 
-        self.callibration = [self.tl, self.tr, self.br, self.bl]
+        self.calibration = [self.tl, self.tr, self.br, self.bl]
         
     
     @staticmethod
-    def draw_callibration_frame(image, n_frames=10):
+    def draw_calibration_frame(image, n_frames=10):
 
         color = (0,0,255)
         thickness = 2
@@ -49,29 +49,29 @@ class Callibrator():
         cv2.line(image, (int(width), 0), (0, int(height)), color, thickness)
 
     
-    def display_callibration(self, image):
+    def display_calibration(self, image):
         
         height, width = image.shape[:2]
 
-        if self.callibrating_tl:
+        if self.calibrating_tl:
             cv2.putText(image, "[1] TOP LEFT", (int(width/4), int(height/2 - 50)), 4, 2, (0, 0, 255))
-        if self.callibrating_tr:
+        if self.calibrating_tr:
             cv2.putText(image, "[2] TOP RIGHT", (int(width/4), int(height/2 - 50)), 4, 2, (0, 0, 255))
-        if self.callibrating_br:
+        if self.calibrating_br:
             cv2.putText(image, "[3] BOTTOM RIGHT", (int(width/4), int(height/2 - 50)), 4, 2, (0, 0, 255))
-        if self.callibrating_bl:
+        if self.calibrating_bl:
             cv2.putText(image, "[4] BOTTOM LEFT", (int(width/4), int(height/2 - 50)), 4, 2, (0, 0, 255))
 
-        self.draw_callibration_frame(image)
+        self.draw_calibration_frame(image)
 
-        cv2.putText(image, "PERSPECTIVE callibration", (int(width/4), int(height/2)), 4, 2, (0, 0, 255))
+        cv2.putText(image, "PERSPECTIVE calibration", (int(width/4), int(height/2)), 4, 2, (0, 0, 255))
         cv2.putText(image, "[[{}, {}], [{}, {}], [{}, {}], [{}, {}]]".format(
                     self.tl[0], self.tl[1], self.tr[0], self.tr[1], self.br[0], self.br[1], self.bl[0], self.bl[1]), 
                     (int(width/4), int(height/2+30)), 2, 1, (0, 255, 255))
 
-    def callibrate(self, image):
-        
-        if sum(np.array(self.callibration).reshape(-1)) == 0:
+    def calibrate(self, image):
+
+        if sum(np.array(self.calibration).reshape(-1)) == 0:
             return image
 
         height, width = image.shape[:2]
@@ -92,17 +92,17 @@ class Callibrator():
 
     def key_handler(self, key):
 
-        if self.callibrating:
+        if self.calibrating:
             if key == ord("c"):
-                print("finish callibration: {}".format(self.callibration))
-                self.callibrating_tl = False
-                self.callibrating_tr = False
-                self.callibrating_br = False
-                self.callibrating_bl = False
-                self.callibrating = False
+                print("finish calibration: {}".format(self.calibration))
+                self.calibrating_tl = False
+                self.calibrating_tr = False
+                self.calibrating_br = False
+                self.calibrating_bl = False
+                self.calibrating = False
             
             # TOP LEFT CORNER
-            if self.callibrating_tl:
+            if self.calibrating_tl:
                 if key == ord("w"):
                     self.tl[1] -= self.unit # move up
                 elif key == ord("s"):
@@ -112,17 +112,17 @@ class Callibrator():
                 elif key == ord("d"):
                     self.tl[0] += self.unit # move right
 
-            if key == ord("1") and not self.callibrating_tl:
-                self.callibrating_tl = True
-                self.callibrating_tr = False
-                self.callibrating_br = False
-                self.callibrating_bl = False
-            elif key == ord("1") and self.callibrating_tl:
-                self.callibrating_tl = False 
+            if key == ord("1") and not self.calibrating_tl:
+                self.calibrating_tl = True
+                self.calibrating_tr = False
+                self.calibrating_br = False
+                self.calibrating_bl = False
+            elif key == ord("1") and self.calibrating_tl:
+                self.calibrating_tl = False 
 
             
             # TOP RIGHT CORNER
-            if self.callibrating_tr:
+            if self.calibrating_tr:
                 if key == ord("w"):
                     self.tr[1] -= self.unit # move up
                 elif key == ord("s"):
@@ -132,17 +132,17 @@ class Callibrator():
                 elif key == ord("d"):
                     self.tr[0] += self.unit # move right
 
-            if key == ord("2") and not self.callibrating_tr:
-                self.callibrating_tl = False
-                self.callibrating_tr = True
-                self.callibrating_br = False
-                self.callibrating_bl = False
-            elif key == ord("2") and self.callibrating_tr:
-                self.callibrating_tr = False 
+            if key == ord("2") and not self.calibrating_tr:
+                self.calibrating_tl = False
+                self.calibrating_tr = True
+                self.calibrating_br = False
+                self.calibrating_bl = False
+            elif key == ord("2") and self.calibrating_tr:
+                self.calibrating_tr = False 
             
 
             # BOTTOM RIGHT CORNER
-            if self.callibrating_br:
+            if self.calibrating_br:
                 if key == ord("w"):
                     self.br[1] -= self.unit # move up
                 elif key == ord("s"):
@@ -152,17 +152,17 @@ class Callibrator():
                 elif key == ord("d"):
                     self.br[0] += self.unit # move right
 
-            if key == ord("3") and not self.callibrating_br:
-                self.callibrating_tl = False
-                self.callibrating_tr = False
-                self.callibrating_br = True
-                self.callibrating_bl = False
-            elif key == ord("3") and self.callibrating_br:
-                self.callibrating_br = False 
+            if key == ord("3") and not self.calibrating_br:
+                self.calibrating_tl = False
+                self.calibrating_tr = False
+                self.calibrating_br = True
+                self.calibrating_bl = False
+            elif key == ord("3") and self.calibrating_br:
+                self.calibrating_br = False 
 
 
             # BOTTOM LEFT CORNER
-            if self.callibrating_bl:
+            if self.calibrating_bl:
                 if key == ord("w"):
                     self.bl[1] -= self.unit # move up
                 elif key == ord("s"):
@@ -172,18 +172,18 @@ class Callibrator():
                 elif key == ord("d"):
                     self.bl[0] += self.unit # move right
 
-            if key == ord("4") and not self.callibrating_bl:
-                self.callibrating_tl = False
-                self.callibrating_tr = False
-                self.callibrating_br = False
-                self.callibrating_bl = True
-            elif key == ord("4") and self.callibrating_bl:
-                self.callibrating_bl = False
+            if key == ord("4") and not self.calibrating_bl:
+                self.calibrating_tl = False
+                self.calibrating_tr = False
+                self.calibrating_br = False
+                self.calibrating_bl = True
+            elif key == ord("4") and self.calibrating_bl:
+                self.calibrating_bl = False
 
         else:
             if key == ord("c"):
-                print("start callibration")
-                self.callibrating = True
+                print("start calibration")
+                self.calibrating = True
 
 
 

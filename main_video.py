@@ -11,7 +11,7 @@ import pyrealsense2 as rs
 # from openpose import pyopenpose as op
 
 from animation import set_animation
-from callibrator import set_callibrator
+from calibrator import set_calibrator
 
 
 def parse_arguments():
@@ -96,7 +96,7 @@ def project_visuals(
     data_file = '../data/ai_office_dance.avi'
 
     animation = set_animation()
-    callibrator = set_callibrator()
+    calibrator = set_calibrator()
 
     print(data_file)
 
@@ -115,10 +115,10 @@ def project_visuals(
         animation.draw_pose(color_image)
         animation.update()
 
-        if callibrator.callibrating:
-            callibrator.display_callibration(color_image)
+        if calibrator.calibrating:
+            calibrator.display_calibration(color_image)
 
-        color_image = callibrator.callibrate(color_image)
+        color_image = calibrator.calibrate(color_image)
 
         cv2.imshow(frame_name, color_image)
 
@@ -128,7 +128,7 @@ def project_visuals(
             print("Closing the app, user pressed 'q' key!")
             return
 
-        callibrator.key_handler(key)
+        calibrator.key_handler(key)
 
         i += 1
         time.sleep(0.005)
