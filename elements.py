@@ -310,46 +310,110 @@ class SpinnerMiddleHands(Spinner, Chaser):
         self.center_radius += delta*self.center_radius_parameter
     
 
-class ChaserScreen(Chaser):
-
+class Screen():
     def __init__(self, 
                  color_a=None,
                  color_b=None,
                  *args, **kwargs):
         super().__init__(*args, **kwargs) 
 
-        self.color_a = color_a if color_a is not None else (0, 0, 190)
-        self.color_b = color_b if color_b is not None else (0, 0, 0)
+        self.color_a = color_a 
+        self.color_b = color_b 
 
     def vertical_screen(self, image):
         h, w = image.shape[:2]
 
-        draw_rectangle(image, (0,0), (self.position[0], h), self.color_a)
-        draw_rectangle(image, (self.position[0], 0), (w, h), self.color_b)
+        if self.color_a is not None:
+            draw_rectangle(image, (0,0), (self.position[0], h), self.color_a)
+        if self.color_b is not None:
+            draw_rectangle(image, (self.position[0], 0), (w, h), self.color_b)
+
+        return image
 
     def horizontal_screen(self, image):
         h, w = image.shape[:2]
 
-        draw_rectangle(image, (0,0), (w, self.position[1]), self.color_a)
-        draw_rectangle(image, (0, self.position[1]), (w, h), self.color_b)
+        if self.color_a is not None:
+            draw_rectangle(image, (0,0), (w, self.position[1]), self.color_a)
+        if self.color_b is not None:
+            draw_rectangle(image, (0, self.position[1]), (w, h), self.color_b)
+
+        return image
 
     def flip_colors(self):
         self.color_a, self.color_b = self.color_b, self.color_a
 
     def draw(self, image, *args, **kwargs):
-        # print((self.chase_to.position[0], h))
+        # self.horizontal_screen(image)
+        self.vertical_screen(image)
+        return image
 
-        self.horizontal_screen(image)
+
+class ChaserScreen(Screen, Chaser):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs) 
+
+
+class AngledChaserScreen(ChaserScreen):
+    def __init__(self, point_a, point_b, *args, **kwargs):
+        super().__init__(*args, **kwargs) 
+        self.point_a = point_a
+        self.point_b = point_b
+        self.angle = angle_between(self.point_b.position - self.point_a.position, np.array([1, 0]))
+
+    def update(self):
+        ChaserScreen.update(self)
+        self.angle = angle_between(self.point_b.position - self.point_a.position, np.array([1, 0]))
+
+        print("angle", self.angle)
+        # import time; time.sleep(1)
+
+    def draw(self, image, *args, **kwargs):
+
+        draw_line(image, self.point_a.position, self.point_b.position, (0,0,0), 5)
+        # image = ChaserScreen.draw(self, image, *args, **kwargs)
+        # image = rotate_image(image, (self.position[0], self.position[1]), np.pi)
         
+        h, w = image.shape[:2]
+        # rot_center = (500, 500)
+        # rotation_matrix = cv2.getRotationMatrix2D(rot_center, 90, 1)
+        # image = cv2.warpAffine(image, rotation_matrix, (w, h))
+
+        # print("rotating {}".format(self.angle))
+
+        # center_rot = [self.position[0], self.position[1]]
+        x, y = [self.position[0], self.position[1]]
+
+        black_image = np.zeros((h, w), np.uint8)
+
+        draw_rectangle(black_image, (x - 100, y - 100), (x + 100, y + 100), (150, 250, 0))
+        rotation_matrix = cv2.getRotationMatrix2D((x, y), 180/np.pi*self.angle, 1)
+        black_image = cv2.warpAffine(black_image, rotation_matrix, (w, h))
+
+
+        # black_image = cv2.warpAffine(image, rotation_matrix, (w, h))
+        # rotation_matrix = cv2.getRotationMatrix2D((x, y), 180/np.pi*self.angle, 1)
+        # image = cv2.warpAffine(image, rotation_matrix, (w, h))
+        image[:, :, 2] += black_image
 
         return image
 
+
+
+class DoubleScreen():
+    def __init__(self, point_a, point_b):
+        self.chaser_a = ChaserScreen(chase_to=point_a, color_a=(0,0,0))
+        self.chaser_b = ChaserScreen(chase_to=point_b, color_b=(0,0,190))
+
+    def draw(self, image, *args, **kwargs):
+        image = self.chaser_b.draw(image, *args, **kwargs)
+        image = self.chaser_a.draw(image, *args, **kwargs)
+        return image
+
     def update(self):
+        self.chaser_a.update()
+        self.chaser_b.update()
 
-        # import time; time.sleep(1)
-        print("updating screen")
-
-        Chaser.update(self)
 
 
 def draw_rectangle(image, pt1, pt2, color, thickness=-1):
@@ -388,7 +452,36 @@ def pol2cart(rho, phi):
     return np.array([x, y])
 
 
+def unit_vector(vector):
+    """ Returns the unit vector of the vector.  """
+    return vector / np.linalg.norm(vector)
 
+def angle_between(v1, v2):
+    """ Returns the angle in radians between vectors 'v1' and 'v2'::
+
+            >>> angle_between((1, 0, 0), (0, 1, 0))
+            1.5707963267948966
+            >>> angle_between((1, 0, 0), (1, 0, 0))
+            0.0
+            >>> angle_between((1, 0, 0), (-1, 0, 0))
+            3.141592653589793
+    """
+    v1_u = unit_vector(v1)
+    v2_u = unit_vector(v2)
+    return np.arccos(np.clip(np.dot(v1_u, v2_u), -1.0, 1.0))
+
+def rotate_image(image, rot_center, angle):
+    h, w = image.shape[:2]
+    rotation_matrix = cv2.getRotationMatrix2D(rot_center, angle, 1)
+    rotated_image = cv2.warpAffine(image, rotation_matrix, (w, h))
+
+
+    h, w = image.shape[:2]
+    rot_center = (500, 500)
+    rotation_matrix = cv2.getRotationMatrix2D(rot_center, 90, 1)
+    color_image = cv2.warpAffine(image, rotation_matrix, (w, h))
+
+    return rotated_image
 
 if __name__ == "__main__":
 
