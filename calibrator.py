@@ -22,18 +22,13 @@ class Calibrator():
     calibrating_bl = False
 
     def __init__(self, tl=None, tr=None, br=None, bl=None):
-        if tl is None:
-            self.tl = [0,0]
-        if tr is None:
-            self.tr = [0,0]
-        if br is None:
-            self.br = [0,0]
-        if bl is None:
-            self.bl = [0,0]
+        self.tl = tl if tl is not None else [0, 0]
+        self.tr = tr if tr is not None else [0, 0]
+        self.bl = bl if bl is not None else [0, 0]
+        self.br = br if br is not None else [0, 0]
 
         self.calibration = [self.tl, self.tr, self.br, self.bl]
-        
-    
+
     @staticmethod
     def draw_calibration_frame(image, n_frames=10):
 

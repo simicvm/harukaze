@@ -75,6 +75,12 @@ def parse_arguments():
         type=str,
         help="Absolute path to the folder containing source video and (optionally) pose files.",
     )
+    parser.add_argument(
+        "--no-inference",
+        default=False,
+        action="store_true",
+        help="Use to load poses from json and not run live inference."
+    )
     return parser.parse_known_args()
 
 
@@ -141,19 +147,30 @@ def get_image_from_realsense(pipe):
     return None, color_image
 
 
-def get_pose_from_openpose(pose_pipe, _):
-    if pose_pipe.poll():
-        pose_points = pose_pipe.recv()
+def get_pose_from_openpose(pose_pipe):
+    pose_points_old = np.zeros((1, 25, 3), dtype=np.uint8)
+    while True:
+        if pose_pipe.poll():
+            pose_points = pose_pipe.recv()
+            if pose_points.ndim != 3:
+                pose_points = pose_points_old
+        else:
+            pose_points = pose_points_old
         pose_points_old = pose_points
-    else:
-        pose_points = pose_points_old
-    return pose_points_old, pose_points
+        yield pose_points_old, pose_points
 
 
-def get_pose_from_file(_, i):
-    json_path = inference_files[i]
-    animation.update_pose_from_json(json_path)
-    return None
+def get_pose_from_file(inference_files):
+    def _split_points(points):
+        return [points[x:x+3] for x in range(0, len(points), 3)]
+
+    for json_path in inference_files:
+        with open(json_path) as f:
+            inference = json.load(f)
+            person_inference = inference.get("people", [{}])[0]
+            points = person_inference.get("pose_keypoints_2d", [])
+            points = _split_points(points)
+            yield None, [points]
 
 
 def project_visuals(
@@ -163,55 +180,59 @@ def project_visuals(
         openpose_params=None,
         image_pipe=None,
         pose_pipe=None,
-        animation=None
+        animation=None,
+        calibrator=None,
+        no_inference=None
 ):
     if video_file is None:
         stream, pipe, profile = initialize_realsense(frame_name=frame_name)
         get_image = get_image_from_realsense
-        get_pose = get_pose_from_openpose
+        get_pose = get_pose_from_openpose(pose_pipe)
 
     elif os.path.isfile(video_file):
         cap = cv2.VideoCapture(video_file)
         get_image = lambda x: cap.read()
         pipe = None
-        if pose_files is not None:
-            get_pose = get_pose_from_file
+        if not no_inference:
+            get_pose = get_pose_from_openpose(pose_pipe)
+        elif pose_files is not None:
+            get_pose = get_pose_from_file(pose_files)
 
     else:
         return "Error, running mode not specified properly!"
 
-    # datum, opWrapper = initialize_openpose(openpose_params)
-    pose_points_old = np.zeros((720, 1280, 3), dtype=np.uint8)
-
-    i = 0
     while True:
         start_time = time.time()
         _, color_image = get_image(pipe)
         # Not sure if this resizing is useful here. On the one hand I moved the resizing
         # from the OP process to the main one. On the other hand there is much less data
         # to be serialized and sent over the pipe.
-        color_image = cv2.resize(color_image, (464, 256), interpolation=cv2.INTER_LINEAR)
+        # color_image = cv2.resize(color_image, (464, 256), interpolation=cv2.INTER_LINEAR)
 
-        image_pipe.send(color_image)
-        pose_points_old, pose_points = get_pose(pose_pipe, i)
+        if not no_inference:
+            image_pipe.send(color_image)
+        pose_points_old, pose_points = next(get_pose)
 
-        # datum.cvInputData = color_image
-        # opWrapper.emplaceAndPop([datum])
-        # pose_points = datum.poseKeypoints
         black_image = np.zeros((720, 1280, 3), dtype=np.uint8)
+        # color_image = black_image
 
-        animation.update_pose(pose_points)
-        # animation.draw_pose(color_image)
-        color_image = animation.draw(color_image)
+        animation.update_pose(pose_points[0])
+        animation.update()
+        # color_image = animation.draw(color_image)
+        animation.draw_pose(color_image)
 
+        if calibrator.calibrating:
+            calibrator.display_calibration(color_image)
+
+        color_image = calibrator.calibrate(color_image)
         cv2.imshow(frame_name, color_image)
 
         print(
             "FPS: ", 1.0 / (time.time() - start_time)
         )  # FPS = 1 / time to process loop
 
-        i += 1
         key = cv2.waitKey(1)
+        calibrator.key_handler(key)
         if key == ord("q"):
             stream.release()
             cv2.destroyAllWindows()
@@ -221,31 +242,44 @@ def project_visuals(
 if __name__ == "__main__":
     arguments = parse_arguments()
     openpose_params = set_openpose(arguments)
+    video_file = None
+    pose_files = None
 
-    if arguments.data_path is not None:
-        data_path = arguments.data_path
+    if arguments[0].data_path is not None:
+        data_path = arguments[0].data_path
         assert os.path.isdir(data_path), "Data folder does not exist."
-        pose_files = sorted([f for f in os.listdir(data_path) if f.endswith(".json")])
-        video_file = [f for f in os.listdir(data_path) if f.endswith(".avi")]
+        pose_files = sorted([os.path.join(data_path, f) for f in os.listdir(data_path) if f.endswith(".json")])
+        video_file = [os.path.join(data_path, f) for f in os.listdir(data_path) if f.endswith(".avi")]
         assert len(video_file) == 1, "Data path has to contain only one video!"
+        video_file = video_file[0]
 
     image_pipe_parent, image_pipe_child = Pipe()
     pose_pipe_parent, pose_pipe_child = Pipe()
-    p_1 = Process(
-        target=run_openpose,
-        daemon=True,
-        args=(openpose_params, image_pipe_child, pose_pipe_child),
-    )
-    p_1.start()
+    if not arguments[0].no_inference:
+        p_1 = Process(
+            target=run_openpose,
+            daemon=True,
+            args=(openpose_params, image_pipe_child, pose_pipe_child),
+        )
+        p_1.start()
 
     animation = set_animation()
+    calibrator = set_calibrator(
+        # tl=[-235, 95],
+        # tr=[55, 155],
+        # br=[45, 210],
+        # bl=[-240, 370]
+    )
     message = project_visuals(
-        video_file=video_file[0],
+        video_file=video_file,
         pose_files=pose_files,
         image_pipe=image_pipe_parent,
         pose_pipe=pose_pipe_parent,
         openpose_params=openpose_params,
-        animation=animation
+        animation=animation,
+        calibrator=calibrator,
+        no_inference=arguments[0].no_inference
     )
     print(message)
-    p_1.join()
+    if not arguments[0].no_inference:
+        p_1.join()
