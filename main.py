@@ -8,7 +8,6 @@ from multiprocessing import Process, Queue, Manager, Pipe
 import cv2
 import numpy as np
 import pyrealsense2 as rs
-from openpose import pyopenpose as op
 
 from animation import set_animation
 from calibrator import set_calibrator
@@ -240,6 +239,11 @@ def project_visuals(
 
 
 if __name__ == "__main__":
+    if sys.platform == "linux":
+        from openpose import pyopenpose as op
+    else:
+        print("Running without Openpose!")
+
     arguments = parse_arguments()
     openpose_params = set_openpose(arguments)
     video_file = None
