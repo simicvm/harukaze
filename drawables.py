@@ -5,10 +5,12 @@ import time
 
 DEBUG = False
 
+
 class Drawable():
     def __init__(self, position, name):
         self.name = name
         self.position = position.astype(np.float64)
+
 
 
 class ChaserSpinningMiddleHands(Drawable):
@@ -37,23 +39,28 @@ class ChaserSpinningMiddleHands(Drawable):
 
     # drawing parameters
     n_circles_parameter = 1 # times hand_to_hand distance 
-    min_n_circles = 5
-    max_n_circles = 100
+    min_n_circles = 10
+    max_n_circles = 50
+
     n_circles = 1
-    max_n_circles_delta = 5
+    max_n_circles_delta = 200
     
-    max_angular_speed = 0.05 #0.015 * np.pi
+    max_angular_speed = 0.02 #0.01 #0.015 * np.pi
 
-    center_radius_parameter = 1.3
-    min_center_radius = 2
-    max_center_radius = 150
+    center_radius_parameter = 0.1
+    min_center_radius = 3
+    max_center_radius = 50
 
-    circle_size_parameter = 0.004
+    circle_size_parameter = 0.0001
     min_circle_size = 5
     max_circle_size = 30
 
     color_a = (0, 0, 190)
     color_b = (0, 0, 0)
+
+    max_hand_to_hand_distance_delta = 200
+    max_n_skip = 5
+    n_skip = 0
 
     # physics parameters
     position = np.array([0., 0])
@@ -83,7 +90,7 @@ class ChaserSpinningMiddleHands(Drawable):
         
 
         for i in range(self.n_circles, 0, -1): # we want to print bigger circles first
-
+            
             angle = 2 * np.pi * i * self.angular_speed * self.step / self.n_circles
 
             if i%2:
@@ -92,7 +99,8 @@ class ChaserSpinningMiddleHands(Drawable):
                 color = self.color_b
 
             center = self.position + pol2cart(self.center_radius, angle)
-            size = self.circle_size * i
+            # size = self.circle_size * i
+            size = 5*i
             
             if allow_transparency:
                 overlay = frame.copy()
@@ -108,8 +116,15 @@ class ChaserSpinningMiddleHands(Drawable):
         """
             finding the point between two (right and left hand positions)
         """
-        self.hand_to_hand_distance = self.right_hand.position - self.left_hand.position
-        self.hand_to_hand_distance_norm = np.linalg.norm(self.hand_to_hand_distance)
+        new_hand_to_hand_distance = self.right_hand.position - self.left_hand.position
+        new_hand_to_hand_distance_norm = np.linalg.norm(new_hand_to_hand_distance)
+
+        if new_hand_to_hand_distance_norm < self.max_hand_to_hand_distance_delta and self.n_skip < self.max_n_skip:
+            self.hand_to_hand_distance = new_hand_to_hand_distance
+            self.hand_to_hand_distance_norm = new_hand_to_hand_distance_norm
+            self.n_skip = 0
+        else:
+            self.n_skip += 1
 
         if self.hand_to_hand_distance_norm > 0:
             self.distance_unit = self.hand_to_hand_distance / self.hand_to_hand_distance_norm

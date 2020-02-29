@@ -6,7 +6,9 @@ import numpy as np
 
 from pose import Pose
 from drawables import ChaserSpinningMiddleHands
+from elements import RandomCircle, ChaserCircle, MiddleCircle, MiddlePoint
 
+DEBUG = False
 
 def set_animation():
 
@@ -14,14 +16,33 @@ def set_animation():
     animation = Animation()
     animation.add_pose(pose)
 
-    animation.objects.append(
-        ChaserSpinningMiddleHands(
+    spinning_middle_hands = ChaserSpinningMiddleHands(
             name="ball_1", 
             right_hand=pose.joints["right_hand"], 
             left_hand=pose.joints["left_hand"], 
             position=np.array([500,500])
-        )
     )
+
+    circle = RandomCircle(position=np.array([300, 300]))
+    circle_2 = RandomCircle(position=np.array([300, 300]))
+    circle_chaser = ChaserCircle(position=np.array([500, 500]), chase_to=circle)
+    circle_middle = MiddleCircle(point_a=circle, point_b=circle_chaser)
+
+    # center_hands = MiddlePoint(point_a=animation.pose.joints["right_hand"], point_b=animation.pose.joints["left_hand"])
+
+    center_hands = MiddleCircle(point_a=animation.pose.joints["right_hand"], point_b=animation.pose.joints["left_hand"])
+    chaser_middle_hands = ChaserCircle(position=np.array([500, 500]), chase_to=center_hands)
+
+    animation.objects.extend([
+        # spinning_middle_hands,
+        # circle_2,
+        center_hands,
+        chaser_middle_hands
+        # circle_chaser,
+
+        # circle,
+        # circle_middle
+    ])
     return animation
 
 
@@ -59,7 +80,10 @@ class Animation():
         return frame
 
     def draw_pose(self, frame):
-        for joint in self.pose.joints.values():
-            cv2.circle(frame, (int(joint.position[0]), int(joint.position[1])), 10, (0,255,0), -1)
+        for name, joint in self.pose.joints.items():
+            if DEBUG:
+                print(name, joint.position)
+            
+            cv2.circle(frame, (int(joint.position[0]), int(joint.position[1])), 10, (255,255,0), -1)
 
         return frame
