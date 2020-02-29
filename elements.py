@@ -2,6 +2,8 @@ import cv2
 import numpy as np
 import random
 
+from collections import namedtuple
+
 class Element():
     """
     Element is an entitity that lives in the animation
@@ -24,7 +26,7 @@ class Element():
     def update(self):
         raise NotImplementedError
 
-    def draw(self):
+    def draw(self, frame, allow_transparency):
         raise NotImplementedError
 
 
@@ -159,6 +161,8 @@ class MiddlePoint(Element):
         self.point_a = point_a
         self.point_b = point_b
 
+        self.point_to_point_distance = self.point_b.position - self.point_a.position
+        self.point_to_point_distance_norm = np.linalg.norm(self.point_to_point_distance)
 
     def update(self):
 
@@ -171,6 +175,59 @@ class MiddlePoint(Element):
         else:
             self.position = self.point_a.position
 
+    def draw(self, frame, *args, **kwargs):
+        return frame
+
+
+
+SpinnerConfiguration = namedtuple("SpinnerConfiguration", "n_circles angular_speed center_radius min_radius color_a color_b")
+
+
+
+
+
+class Spinner(Element):
+    """
+        Element that moves according to euler's integration
+    """
+
+    def __init__(self, 
+                n_circles=None,
+                angular_speed=None,
+                center_radius=None,
+                min_radius=None,
+                colors=None,
+                *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        self.n_circles = n_circles if n_circles is not None else 20
+        self.angular_speed = angular_speed if angular_speed is not None else 0.02
+        self.center_radius = center_radius if center_radius is not None else 200
+        self.min_radius = min_radius if min_radius is not None else 2
+
+        # idea, alternate btw colors when there are only 2
+        if colors is None: 
+            self.colors = [(0, 0, 0), (0, 0, 200)]
+
+        self.step = 1
+    
+
+    def draw(self, frame, allow_transparency):
+        for i in range(self.n_circles, 0, -1): # we want to print bigger circles first
+            
+            angle = 2 * np.pi * i * self.step * self.angular_speed / self.n_circles
+
+            color = self.colors[i%len(self.colors)]
+
+            center = self.position + pol2cart(self.center_radius, angle)
+
+            size = self.min_radius*(i+1)
+            
+            draw_circle(frame, center, size, color, -1)
+
+        self.step += 1
+
+        return frame
 
 
 
@@ -208,6 +265,102 @@ class MiddleCircle(MiddlePoint, Circle):
         super().__init__(*args, **kwargs)
 
 
+class ChasserSpinner(Chaser, Spinner):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+
+"""
+n_circles_parameter = 0.01
+center_radius_parameter = 0.05
+tension = 0.1
+
+n_circles = 20
+angular_speed =  0.02
+center_radius =  200
+min_radius = 2
+"""
+
+class SpinnerMiddleHands(Spinner, Chaser):
+
+    def __init__(self, 
+                 chase_to, 
+                 tension=0.1,                      # control how fast length increases or decreases
+                 n_circles_parameter=0.01,         # control how fast new circles are added
+                 center_radius_parameter=0.05, 
+                 *args, **kwargs):
+        
+        super().__init__(chase_to=chase_to, *args, **kwargs)
+        self.length = self.chase_to.point_to_point_distance_norm
+        self.tension = tension
+        self.n_circles_parameter = n_circles_parameter
+        self.center_radius_parameter = center_radius_parameter
+
+
+    def update(self, *args, **kwargs):
+
+        new_length = self.chase_to.point_to_point_distance_norm 
+        delta = new_length - self.length
+
+        
+        Chaser.update(self)
+        self.length += self.tension * delta
+
+        self.n_circles += int(delta*self.n_circles_parameter)
+        self.center_radius += delta*self.center_radius_parameter
+    
+
+class ChaserScreen(Chaser):
+
+    def __init__(self, 
+                 color_a=None,
+                 color_b=None,
+                 *args, **kwargs):
+        super().__init__(*args, **kwargs) 
+
+        self.color_a = color_a if color_a is not None else (0, 0, 190)
+        self.color_b = color_b if color_b is not None else (0, 0, 0)
+
+    def vertical_screen(self, image):
+        h, w = image.shape[:2]
+
+        draw_rectangle(image, (0,0), (self.position[0], h), self.color_a)
+        draw_rectangle(image, (self.position[0], 0), (w, h), self.color_b)
+
+    def horizontal_screen(self, image):
+        h, w = image.shape[:2]
+
+        draw_rectangle(image, (0,0), (w, self.position[1]), self.color_a)
+        draw_rectangle(image, (0, self.position[1]), (w, h), self.color_b)
+
+    def flip_colors(self):
+        self.color_a, self.color_b = self.color_b, self.color_a
+
+    def draw(self, image, *args, **kwargs):
+        # print((self.chase_to.position[0], h))
+
+        self.horizontal_screen(image)
+        
+
+        return image
+
+    def update(self):
+
+        # import time; time.sleep(1)
+        print("updating screen")
+
+        Chaser.update(self)
+
+
+def draw_rectangle(image, pt1, pt2, color, thickness=-1):
+    x_1 = np.rint(pt1[0]).astype(np.int64)
+    y_1 = np.rint(pt1[1]).astype(np.int64)
+
+    x_2 = np.rint(pt2[0]).astype(np.int64)
+    y_2 = np.rint(pt2[1]).astype(np.int64)
+
+    cv2.rectangle(image, (x_1, y_1), (x_2, y_2), color=color, thickness=thickness)
+
 def draw_circle(image, center, radius, color, width):
 
     x = np.rint(center[0]).astype(np.int64)
@@ -222,6 +375,20 @@ def draw_line(image, pt1, pt2, color, width):
     y_2 = np.rint(pt2[1]).astype(np.int64)
 
     cv2.line(image, (x_1, y_1), (x_2, y_2), color, width)
+
+
+def cart2pol(x, y):
+    rho = np.sqrt(x**2 + y**2)
+    phi = np.arctan2(y, x)
+    return(rho, phi)
+
+def pol2cart(rho, phi):
+    x = rho * np.cos(phi)
+    y = rho * np.sin(phi)
+    return np.array([x, y])
+
+
+
 
 if __name__ == "__main__":
 
