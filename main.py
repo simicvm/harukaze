@@ -69,6 +69,12 @@ def parse_arguments():
         help="Absolute path to the desired output folder.",
     )
     parser.add_argument(
+        "--op-process-real-time",
+        default=False,
+        action="store_true",
+        help="Enable to keep the original source frame rate"
+    )
+    parser.add_argument(
         "--data-path",
         default=None,
         type=str,
@@ -226,9 +232,9 @@ def project_visuals(
         color_image = calibrator.calibrate(color_image)
         cv2.imshow(frame_name, color_image)
 
-        print(
-            "FPS: ", 1.0 / (time.time() - start_time)
-        )  # FPS = 1 / time to process loop
+        # print(
+        #     "FPS: ", 1.0 / (time.time() - start_time)
+        # )  # FPS = 1 / time to process loop
 
         key = cv2.waitKey(1)
         calibrator.key_handler(key)
@@ -269,10 +275,10 @@ if __name__ == "__main__":
 
     animation = set_animation()
     calibrator = set_calibrator(
-        # tl=[-235, 95],
-        # tr=[55, 155],
-        # br=[45, 210],
-        # bl=[-240, 370]
+        # tl=[-340, -165],
+        # tr=[140, -125],
+        # br=[95, 50],
+        # bl=[-255, 90]
     )
     message = project_visuals(
         video_file=video_file,
