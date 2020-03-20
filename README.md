@@ -6,7 +6,7 @@ Repository holds code for the performance at the festival Harukaze in Tokyo, Mar
 
 From video and json:
 ```
-python main.py --op-model-folder /home/user/openpose/models/ --data-path /home/user/harukaze/data --op-number-people-max 1 --op-render-pose 0 --op-net-resolution 176x96 --op-output-resolution 1280x720 --op-keypoint-scale 2 --no-inference
+python main.py --data-path /home/user/harukaze/data --op-number-people-max 1 --op-render-pose 0 --op-net-resolution 176x96 --op-output-resolution 1280x720 --op-keypoint-scale 2 --no-inference
 ```
 
 From video and openpose:
