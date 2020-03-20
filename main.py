@@ -88,7 +88,7 @@ def parse_arguments():
     return parser.parse_known_args()
 
 
-def set_openpose(args):
+def get_openpose_params(args):
     params = dict()
 
     for arg in vars(args[0]):
@@ -186,7 +186,8 @@ def project_visuals(
         calibrator=None,
         no_inference=False
 ):
-    datum, opWrapper = initialize_openpose(openpose_params)
+    if not no_inference:
+        datum, opWrapper = initialize_openpose(openpose_params)
     if video_file is None:
         stream, pipe, profile = initialize_realsense(frame_name=frame_name)
         get_image = get_image_from_realsense
@@ -247,7 +248,7 @@ if __name__ == "__main__":
         print("Running without Openpose!")
 
     arguments = parse_arguments()
-    openpose_params = set_openpose(arguments)
+    openpose_params = get_openpose_params(arguments)
     video_file = None
     pose_files = None
 
