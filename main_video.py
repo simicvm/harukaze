@@ -13,6 +13,7 @@ import pyrealsense2 as rs
 from animation import set_animation
 from calibrator import set_calibrator
 
+START_FROM_FRAME = 0
 
 def parse_arguments():
     parser = argparse.ArgumentParser(description="Harukaze performance code.")
@@ -39,8 +40,6 @@ def parse_arguments():
 
 def set_openpose(args):
     params = dict()
-    # manager = Manager()
-    # params = manager.dict()
 
     for arg in vars(args[0]):
         if arg.startswith("op_"):
@@ -74,7 +73,6 @@ def initialize_realsense(frame_name):
         cv2.WND_PROP_FULLSCREEN,
         cv2.WINDOW_FULLSCREEN
     )
-    # fan_graphics = cv2.imread("/home/ascent/Pictures/fan_diff_small.png")
     stream = cv2.VideoCapture(-1)
     pipe = rs.pipeline()
     profile = pipe.start()
@@ -88,8 +86,6 @@ def project_visuals(
         image_pipe=None,
         pose_pipe=None
     ):
-
-    # TODO: remove at handling videos on main
     
     inference_directory = '../data/ai_office_dance'
     inference_files = sorted([os.path.join(inference_directory, f) for f in os.listdir(inference_directory)])
@@ -102,18 +98,26 @@ def project_visuals(
 
     cap = cv2.VideoCapture(data_file)
 
-    i = 0
+    i = -1
     while True:
+        i += 1
+        
         start_time = time.time()
-
         ret, color_image = cap.read()
+
+        if i < START_FROM_FRAME:
+            continue
+        else:
+            time.sleep(0.001)
         
         json_path = inference_files[i]
 
         animation.update_pose_from_json(json_path)
 
-        animation.draw_pose(color_image)
+        animation.draw(color_image)
         animation.update()
+
+        animation.draw_pose(color_image)
 
         if calibrator.calibrating:
             calibrator.display_calibration(color_image)
@@ -129,9 +133,7 @@ def project_visuals(
             return
 
         calibrator.key_handler(key)
-
-        i += 1
-        time.sleep(0.005)
+        animation.key_handler(key)
 
 
 if __name__ == "__main__":

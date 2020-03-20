@@ -13,8 +13,8 @@ class Joint():
     position_delta = position - previous_position
     position_delta_norm = np.linalg.norm(position_delta)
 
-    sensitivity = 20
-    max_skips = 3
+    sensitivity = 50
+    max_skips = 0
     skip_n = 0
 
     def __init__(self, name, idx):
