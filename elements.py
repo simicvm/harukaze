@@ -35,20 +35,16 @@ class Mover(Element):
     Element that contains the movement eq
     """
 
-    def __init__(self, velocity=None, mass=None, *args, **kwargs):
+    def __init__(self, 
+                 velocity=None, 
+                 mass=1, 
+                 *args, **kwargs
+        ):
+
         super().__init__(*args, **kwargs)
 
-        if velocity is None:
-            self.velocity = np.array([0, 0], np.float32)
-        else:
-            self.velocity = velocity
-
-        if mass is None:
-            self.mass = 1
-        else:
-            self.mass = mass
-
         self.forces = []
+        self.velocity = velocity if velocity is not None else np.array([0, 0], np.float32)
         self.acceleration = np.array([0, 0], np.float32)
         
 
@@ -91,31 +87,22 @@ class Chaser(Mover):
     """
     def __init__(self, 
                  chase_to, 
-                 land_distance=None,  # distance to start decreasing speed to land properly
-                 min_distance=None,   # min distance to chase to move
-                 max_speed=None,      # max speed is reached if aligned with target  
-                 max_force=None,      # larger force helps redirecting trajectory
-                 mass=None,
+                 land_distance=70,  # distance to start decreasing speed to land properly
+                 min_distance=10,   # min distance to chase to move
+                 max_speed=5,      # max speed is reached if aligned with target  
+                 max_force=8,      # larger force helps redirecting trajectory
+                 mass=7,
                  *args, **kwargs
 
     ):
         super().__init__(*args, **kwargs)
         self.chase_to = chase_to
+        self.land_distance = land_distance
+        self.min_distance = min_distance
+        self.max_speed = max_speed
+        self.max_force = max_speed
+        self.mass = mass
 
-        if land_distance is None:
-            self.land_distance = 70
-
-        if min_distance is None:
-            self.min_distance = 10
-        
-        if max_speed is None:
-            self.max_speed = 5
-
-        if max_force is None:
-            self.max_force = 8
-
-        if mass is None:
-            self.mass = 7
 
     def update_distance_to_chase(self):
         self.distance_to_chase = self.chase_to.position - self.position
@@ -179,35 +166,30 @@ class MiddlePoint(Element):
         return frame
 
 
-
-SpinnerConfiguration = namedtuple("SpinnerConfiguration", "n_circles angular_speed center_radius min_radius color_a color_b")
-
-
-
-
-
 class Spinner(Element):
     """
         Element that moves according to euler's integration
     """
 
     def __init__(self, 
-                n_circles=None,
-                angular_speed=None,
-                center_radius=None,
-                min_radius=None,
+                n_circles=20,
+                angular_speed=0.02,
+                center_radius=200,
+                min_radius=2,
                 colors=None,
                 *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        self.n_circles = n_circles if n_circles is not None else 20
-        self.angular_speed = angular_speed if angular_speed is not None else 0.02
-        self.center_radius = center_radius if center_radius is not None else 200
-        self.min_radius = min_radius if min_radius is not None else 2
+        self.n_circles = n_circles
+        self.angular_speed = angular_speed
+        self.center_radius = center_radius
+        self.min_radius = min_radius
 
         # idea, alternate btw colors when there are only 2
         if colors is None: 
             self.colors = [(0, 0, 0), (0, 0, 200)]
+        else:
+            self.colors = colors
 
         self.step = 1
     
@@ -216,16 +198,48 @@ class Spinner(Element):
         for i in range(self.n_circles, 0, -1): # we want to print bigger circles first
             
             angle = 2 * np.pi * i * self.step * self.angular_speed / self.n_circles
-
             color = self.colors[i%len(self.colors)]
-
             center = self.position + pol2cart(self.center_radius, angle)
-
             size = self.min_radius*(i+1)
-            
             draw_circle(frame, center, size, color, -1)
 
         self.step += 1
+
+        return frame
+
+
+
+class Tunnel(Element):
+    """
+        Element that moves according to euler's integration
+    """
+
+    def __init__(self, 
+                n_squares=100,
+                size=10,
+                colors=None,
+                *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        self.n_squares = n_squares
+        self.size = size
+        self.colors = colors if colors is not None else [(0,0,0), (0,150,0), (0, 100, 0)]
+        
+
+    def draw(self, frame, allow_transparency):
+        
+        for i in range(self.n_squares, 1, -1):
+            r_1 = np.random.randint(5)
+            r_2 = np.random.randint(5)
+            r_3 = np.random.randint(3, 10)
+
+            size_1 = self.size * i * r_1
+            size_2 = self.size * i * r_2
+            width = r_3
+            color = self.colors[i%len(self.colors)]
+
+            draw_rectangle(frame, self.position - size_1, self.position + size_1, color)
+            draw_rectangle(frame, self.position - size_2, self.position + size_2, color, width)
 
         return frame
 
@@ -265,9 +279,44 @@ class MiddleCircle(MiddlePoint, Circle):
         super().__init__(*args, **kwargs)
 
 
-class ChasserSpinner(Chaser, Spinner):
+class ChaserSpinner(Chaser, Spinner):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+
+
+
+class ChaserTunnel(Chaser, Tunnel):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+
+class TunnelMiddleHands(Tunnel, Chaser):
+
+    def __init__(self, 
+                 chase_to, 
+                 tension=0.1,                      # control how fast length increases or decreases
+                 n_squares_parameter=0.001,         # control how fast new circles are added
+                 size_parameter=0.01, 
+                 *args, **kwargs):
+        
+        super().__init__(chase_to=chase_to, *args, **kwargs)
+        self.length = self.chase_to.point_to_point_distance_norm
+        self.tension = tension
+        self.n_squares_parameter = n_squares_parameter
+        self.size_parameter = size_parameter
+
+
+    def update(self, *args, **kwargs):
+
+        new_length = self.chase_to.point_to_point_distance_norm 
+        delta = new_length - self.length
+
+        
+        Chaser.update(self)
+        self.length += self.tension * delta
+
+        self.n_squares += int(delta*self.n_squares_parameter)
+        self.size += delta*self.size_parameter
 
 
 """
@@ -310,46 +359,118 @@ class SpinnerMiddleHands(Spinner, Chaser):
         self.center_radius += delta*self.center_radius_parameter
     
 
-class ChaserScreen(Chaser):
-
+class Screen():
     def __init__(self, 
+                 mode="horizontal",
                  color_a=None,
                  color_b=None,
                  *args, **kwargs):
         super().__init__(*args, **kwargs) 
 
-        self.color_a = color_a if color_a is not None else (0, 0, 190)
-        self.color_b = color_b if color_b is not None else (0, 0, 0)
+        if mode == "horizontal":
+            self.draw = self.horizontal_screen
+        elif mode == "vertical":
+            self.draw = self.vertical_screen
+        else:
+            raise NotImplementedError
 
-    def vertical_screen(self, image):
+        self.color_a = color_a 
+        self.color_b = color_b 
+
+    def vertical_screen(self, image, *args, **kwargs):
         h, w = image.shape[:2]
 
-        draw_rectangle(image, (0,0), (self.position[0], h), self.color_a)
-        draw_rectangle(image, (self.position[0], 0), (w, h), self.color_b)
+        if self.color_a is not None:
+            draw_rectangle(image, (0,0), (self.position[0], h), self.color_a)
+        if self.color_b is not None:
+            draw_rectangle(image, (self.position[0], 0), (w, h), self.color_b)
 
-    def horizontal_screen(self, image):
+        return image
+
+    def horizontal_screen(self, image, *args, **kwargs):
         h, w = image.shape[:2]
 
-        draw_rectangle(image, (0,0), (w, self.position[1]), self.color_a)
-        draw_rectangle(image, (0, self.position[1]), (w, h), self.color_b)
+        if self.color_a is not None:
+            draw_rectangle(image, (0,0), (w, self.position[1]), self.color_a)
+        if self.color_b is not None:
+            draw_rectangle(image, (0, self.position[1]), (w, h), self.color_b)
+
+        return image
 
     def flip_colors(self):
         self.color_a, self.color_b = self.color_b, self.color_a
 
     def draw(self, image, *args, **kwargs):
-        # print((self.chase_to.position[0], h))
+        # self.horizontal_screen(image)
+        self.vertical_screen(image)
+        return image
 
-        self.horizontal_screen(image)
+
+class ChaserScreen(Screen, Chaser):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs) 
+
+
+class AngledChaserScreen(ChaserScreen):
+    def __init__(self, point_a, point_b, *args, **kwargs):
+        super().__init__(*args, **kwargs) 
+        self.point_a = point_a
+        self.point_b = point_b
+        self.angle = angle_between(self.point_b.position - self.point_a.position, np.array([1, 0]))
+
+    def update(self):
+        ChaserScreen.update(self)
+        self.angle = angle_between(self.point_b.position - self.point_a.position, np.array([1, 0]))
+
+        print("angle", self.angle)
+        # import time; time.sleep(1)
+
+    def draw(self, image, *args, **kwargs):
+
+        draw_line(image, self.point_a.position, self.point_b.position, (0,0,0), 5)
+        # image = ChaserScreen.draw(self, image, *args, **kwargs)
+        # image = rotate_image(image, (self.position[0], self.position[1]), np.pi)
         
+        h, w = image.shape[:2]
+        # rot_center = (500, 500)
+        # rotation_matrix = cv2.getRotationMatrix2D(rot_center, 90, 1)
+        # image = cv2.warpAffine(image, rotation_matrix, (w, h))
+
+        # print("rotating {}".format(self.angle))
+
+        # center_rot = [self.position[0], self.position[1]]
+        x, y = [self.position[0], self.position[1]]
+
+        black_image = np.zeros((h, w), np.uint8)
+
+        draw_rectangle(black_image, (x - 100, y - 100), (x + 100, y + 100), (150, 250, 0))
+        rotation_matrix = cv2.getRotationMatrix2D((x, y), 180/np.pi*self.angle, 1)
+        black_image = cv2.warpAffine(black_image, rotation_matrix, (w, h))
+
+
+        # black_image = cv2.warpAffine(image, rotation_matrix, (w, h))
+        # rotation_matrix = cv2.getRotationMatrix2D((x, y), 180/np.pi*self.angle, 1)
+        # image = cv2.warpAffine(image, rotation_matrix, (w, h))
+        image[:, :, 2] += black_image
 
         return image
 
+
+
+class DoubleScreen():
+    def __init__(self, point_a, point_b):
+        self.chaser_a = ChaserScreen(chase_to=point_a, color_a=(0,0,0))
+        self.chaser_b = ChaserScreen(chase_to=point_b, color_b=(0,0,190))
+
+    def draw(self, image, *args, **kwargs):
+        image = self.chaser_b.draw(image, *args, **kwargs)
+        image = self.chaser_a.draw(image, *args, **kwargs)
+        return image
+
     def update(self):
+        self.chaser_a.update()
+        self.chaser_b.update()
 
-        # import time; time.sleep(1)
-        print("updating screen")
-
-        Chaser.update(self)
 
 
 def draw_rectangle(image, pt1, pt2, color, thickness=-1):
@@ -388,7 +509,36 @@ def pol2cart(rho, phi):
     return np.array([x, y])
 
 
+def unit_vector(vector):
+    """ Returns the unit vector of the vector.  """
+    return vector / np.linalg.norm(vector)
 
+def angle_between(v1, v2):
+    """ Returns the angle in radians between vectors 'v1' and 'v2'::
+
+            >>> angle_between((1, 0, 0), (0, 1, 0))
+            1.5707963267948966
+            >>> angle_between((1, 0, 0), (1, 0, 0))
+            0.0
+            >>> angle_between((1, 0, 0), (-1, 0, 0))
+            3.141592653589793
+    """
+    v1_u = unit_vector(v1)
+    v2_u = unit_vector(v2)
+    return np.arccos(np.clip(np.dot(v1_u, v2_u), -1.0, 1.0))
+
+def rotate_image(image, rot_center, angle):
+    h, w = image.shape[:2]
+    rotation_matrix = cv2.getRotationMatrix2D(rot_center, angle, 1)
+    rotated_image = cv2.warpAffine(image, rotation_matrix, (w, h))
+
+
+    h, w = image.shape[:2]
+    rot_center = (500, 500)
+    rotation_matrix = cv2.getRotationMatrix2D(rot_center, 90, 1)
+    color_image = cv2.warpAffine(image, rotation_matrix, (w, h))
+
+    return rotated_image
 
 if __name__ == "__main__":
 

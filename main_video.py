@@ -115,7 +115,7 @@ def project_visuals(
             time.sleep(0.001)
         
 
-        print("FRAME {}".format(i))
+        # print("FRAME {}".format(i))
         json_path = inference_files[i]
 
         animation.update_pose_from_json(json_path)
@@ -139,6 +139,7 @@ def project_visuals(
             return
 
         calibrator.key_handler(key)
+        animation.key_handler(key)
 
 
 if __name__ == "__main__":

@@ -25,15 +25,8 @@ class Joint():
 
         if sum(position) > 0:
 
-            
-
             position_delta = position - self.position
             position_delta_norm = np.linalg.norm(position_delta)
-
-            # import ipdb; ipdb.set_trace()
-            # print(self.name)
-
-            # print("position_delta", position_delta_norm)
 
             if position_delta_norm < self.sensitivity or self.skip_n == self.max_skips:
                 self.previous_position = self.position

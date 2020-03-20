@@ -11,6 +11,9 @@ def set_calibrator(tl=tl, tr=tr, br=br, bl=bl):
     return Calibrator(tl=tl, tr=tr, br=br, bl=bl)
 
 
+# class CalibratorState():
+
+
 class Calibrator():
 
     unit = 5
