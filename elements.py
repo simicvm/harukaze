@@ -367,6 +367,7 @@ class Screen():
                  *args, **kwargs):
         super().__init__(*args, **kwargs) 
 
+<<<<<<< HEAD
         if mode == "horizontal":
             self.draw = self.horizontal_screen
         elif mode == "vertical":
@@ -374,6 +375,8 @@ class Screen():
         else:
             raise NotImplementedError
 
+=======
+>>>>>>> 17e2bf30b355f084eca2e59a345cf43ac6bda004
         self.color_a = color_a 
         self.color_b = color_b 
 
@@ -384,6 +387,11 @@ class Screen():
             draw_rectangle(image, (0,0), (self.position[0], h), self.color_a)
         if self.color_b is not None:
             draw_rectangle(image, (self.position[0], 0), (w, h), self.color_b)
+<<<<<<< HEAD
+=======
+
+        return image
+>>>>>>> 17e2bf30b355f084eca2e59a345cf43ac6bda004
 
         return image
 

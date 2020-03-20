@@ -140,7 +140,11 @@ def project_visuals(
 
         calibrator.key_handler(key)
         animation.key_handler(key)
+<<<<<<< HEAD
 
+=======
+        # time.sleep(1)
+>>>>>>> 17e2bf30b355f084eca2e59a345cf43ac6bda004
 
 if __name__ == "__main__":
 
