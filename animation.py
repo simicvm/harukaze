@@ -5,13 +5,9 @@ from pose import Pose
 import numpy as np
 
 from pose import Pose
-<<<<<<< HEAD
 from animation_states import NotChangingState
 
 from elements import MiddlePoint, ChaserTunnel, TunnelMiddleHands, SpinnerMiddleHands
-=======
-from elements import MiddlePoint, SpinnerMiddleHands, ChaserScreen, DoubleScreen, AngledChaserScreen
->>>>>>> 17e2bf30b355f084eca2e59a345cf43ac6bda004
 
 DEBUG = False
 
@@ -35,7 +31,6 @@ def set_animation():
     center_hands = MiddlePoint(point_a=animation.pose.joints["right_hand"], point_b=animation.pose.joints["left_hand"])
 
     spinner_chaser_middle_hands = SpinnerMiddleHands(chase_to=center_hands)
-<<<<<<< HEAD
     # chaser_screen = ChaserScreen(chase_to=animation.pose.joints["head"], color_a=(0,0,0))
 
     # angled_chaser_screen = AngledChaserScreen(chase_to=animation.pose.joints["head"], color_a=(0,0,0), color_b=(0,0,190), 
@@ -50,19 +45,6 @@ def set_animation():
         # tunnel_chaser_middle_hands
         # double_screen,
         spinner_chaser_middle_hands,
-=======
-    chaser_screen = ChaserScreen(chase_to=animation.pose.joints["head"], color_a=(0,0,0))
-
-    angled_chaser_screen = AngledChaserScreen(chase_to=animation.pose.joints["head"], color_a=(0,0,0), color_b=(0,0,190), 
-                                              point_a=animation.pose.joints["left_hand"], point_b=animation.pose.joints["right_hand"])
-    double_screen = DoubleScreen(point_a=animation.pose.joints["left_hand"], point_b=animation.pose.joints["right_hand"])
-
-    animation.objects.extend([
-        center_hands,
-
-        # double_screen,
-        # spinner_chaser_middle_hands,
->>>>>>> 17e2bf30b355f084eca2e59a345cf43ac6bda004
         # angled_chaser_screen,
     ])
     return animation
@@ -184,8 +166,6 @@ class Animation():
     def key_handler(self, key):
         self._state.key_handler(key)
 
-<<<<<<< HEAD
-=======
     # def key_handler(self, key):
 
     #     self._state.key_handler(key)
@@ -222,5 +202,4 @@ class Animation():
     #             self.changing_state = True
     #             # import time; time.sleep(5)
 
->>>>>>> 17e2bf30b355f084eca2e59a345cf43ac6bda004
 

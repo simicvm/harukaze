@@ -40,8 +40,6 @@ def parse_arguments():
 
 def set_openpose(args):
     params = dict()
-    # manager = Manager()
-    # params = manager.dict()
 
     for arg in vars(args[0]):
         if arg.startswith("op_"):
@@ -88,8 +86,6 @@ def project_visuals(
         image_pipe=None,
         pose_pipe=None
     ):
-
-    # TODO: remove at handling videos on main
     
     inference_directory = '../data/ai_office_dance'
     inference_files = sorted([os.path.join(inference_directory, f) for f in os.listdir(inference_directory)])
@@ -114,8 +110,6 @@ def project_visuals(
         else:
             time.sleep(0.001)
         
-
-        # print("FRAME {}".format(i))
         json_path = inference_files[i]
 
         animation.update_pose_from_json(json_path)
@@ -140,11 +134,7 @@ def project_visuals(
 
         calibrator.key_handler(key)
         animation.key_handler(key)
-<<<<<<< HEAD
 
-=======
-        # time.sleep(1)
->>>>>>> 17e2bf30b355f084eca2e59a345cf43ac6bda004
 
 if __name__ == "__main__":
 

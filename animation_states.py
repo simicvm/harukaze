@@ -16,7 +16,7 @@ class NotChangingState(AnimationState):
     def key_handler(self, key):
         if key == ord("s"):
             print("start changing state")
-            self.animation._state = ChangingState(self.animation)
+            r
 
 
 class ChangingState(AnimationState):
