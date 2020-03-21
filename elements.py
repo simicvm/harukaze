@@ -177,6 +177,7 @@ class Spinner(Element):
                 center_radius=100,
                 min_radius=2,
                 colors=None,
+                thickness=-1,
                 *args, **kwargs):
         super().__init__(*args, **kwargs)
 
@@ -184,6 +185,7 @@ class Spinner(Element):
         self.angular_speed = angular_speed
         self.center_radius = center_radius
         self.min_radius = min_radius
+        self.thickness = thickness
 
         # idea, alternate btw colors when there are only 2
         if colors is None: 
@@ -201,7 +203,7 @@ class Spinner(Element):
             color = self.colors[i%len(self.colors)]
             center = self.position + pol2cart(self.center_radius, angle)
             size = self.min_radius*(i+1)
-            draw_circle(frame, center, size, color, -1)
+            draw_circle(frame, center, size, color, self.thickness)
 
         self.step += 1
 
@@ -319,6 +321,22 @@ class TunnelMiddleHands(Tunnel, Chaser):
         self.size += delta*self.size_parameter
 
 
+
+class CenteredLines(Element):
+    def __init__(self, chase_to, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.chase_to = chase_to
+        # self.chaser_b = ChaserScreen(chase_to=point_b, color_b=(0,0,190))
+
+    def draw(self, image, *args, **kwargs):
+        return image
+
+    # def update(self):
+        # self.chaser_to.update()
+        # self.chaser_b.update()
+
+
+
 """
 n_circles_parameter = 0.01
 center_radius_parameter = 0.05
@@ -358,7 +376,7 @@ class SpinnerMiddleHands(Spinner, Chaser):
         # self.n_circles += int(delta*self.n_circles_parameter)
         self.center_radius += delta*self.center_radius_parameter
 
-        print("step: {} n_circles: {}   center_radius: {}".format(self.step, self.n_circles, self.center_radius))
+        # print("step: {} n_circles: {}   center_radius: {}".format(self.step, self.n_circles, self.center_radius))
 
 class Screen():
     def __init__(self, 
@@ -471,7 +489,6 @@ class DoubleScreen():
     def update(self):
         self.chaser_a.update()
         self.chaser_b.update()
-
 
 
 def draw_rectangle(image, pt1, pt2, color, thickness=-1):

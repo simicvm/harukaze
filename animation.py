@@ -7,7 +7,14 @@ import numpy as np
 from pose import Pose
 from animation_states import NotChangingState
 
-from elements import MiddlePoint, ChaserTunnel, TunnelMiddleHands, SpinnerMiddleHands
+from elements import (
+    MiddlePoint, 
+    ChaserTunnel, 
+    TunnelMiddleHands, 
+    SpinnerMiddleHands, 
+    AngledChaserScreen,
+    CenteredLines
+)
 
 DEBUG = False
 
@@ -19,7 +26,15 @@ def set_animation():
 
     center_hands = MiddlePoint(point_a=animation.pose.joints["right_hand"], point_b=animation.pose.joints["left_hand"])
 
+    # centered_lines = CenteredLines(chase_to=center_hands)
+
     spinner_chaser_middle_hands = SpinnerMiddleHands(chase_to=center_hands)
+
+    # angled_chaser_screen = AngledChaserScreen(
+    #     chase_to=animation.pose.joints["head"],
+    #     point_a=animation.pose.joints["right_hand"], 
+    #     point_b=animation.pose.joints["left_hand"]
+    # )
     # chaser_screen = ChaserScreen(chase_to=animation.pose.joints["head"], color_a=(0,0,0))
 
     # angled_chaser_screen = AngledChaserScreen(chase_to=animation.pose.joints["head"], color_a=(0,0,0), color_b=(0,0,190), 
@@ -31,6 +46,9 @@ def set_animation():
 
     animation.objects["center_hands"] = center_hands
     animation.objects["spinner_center_hands"] = spinner_chaser_middle_hands
+    # animation.objects["centered_lines"] = centered_lines
+
+    # animation.objects["angled_screen"] = angled_chaser_screen
     
     return animation
 

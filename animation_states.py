@@ -55,21 +55,29 @@ class SpiralState(ChangingState):
         }
 
     def key_handler(self, key):
-        if key == ord("o"):
+        if key == ord("z"):
             print("decreasing n_circles")
             if self.animation.objects["spinner_center_hands"].n_circles > 0:
                 self.animation.objects["spinner_center_hands"].n_circles -= 1
-        elif key == ord("p"):
+        elif key == ord("x"):
             print("increasing n_circles")
             self.animation.objects["spinner_center_hands"].n_circles += 1
 
-        elif key == ord("l"):
+        elif key == ord("c"):
             print("decreasing min_radius")
             if self.animation.objects["spinner_center_hands"].min_radius > 0:
                 self.animation.objects["spinner_center_hands"].min_radius -= 1
-        elif key == ord(";"):
+        elif key == ord("v"):
             print("increasing min_radius")
             self.animation.objects["spinner_center_hands"].min_radius += 1
+
+        elif key == ord("r"):
+            print("change thickness")
+            if self.animation.objects["spinner_center_hands"].thickness == -1:
+                self.animation.objects["spinner_center_hands"].thickness = 10
+            else:
+                self.animation.objects["spinner_center_hands"].thickness = -1
+
         else:
             ChangingState.key_handler(self, key)
 
