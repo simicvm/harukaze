@@ -16,7 +16,7 @@ class NotChangingState(AnimationState):
     def key_handler(self, key):
         if key == ord("s"):
             print("start changing state")
-            r
+            self.animation._state = ChangingState(self.animation)
 
 
 class ChangingState(AnimationState):
@@ -39,6 +39,7 @@ class ChangingState(AnimationState):
 
 
 
+
 class SpiralState(ChangingState):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -48,13 +49,29 @@ class SpiralState(ChangingState):
             point_b=self.animation.pose.joints["left_hand"])
         spinner_chaser_middle_hands = SpinnerMiddleHands(chase_to=center_hands, position=initial_position)
 
-        self.animation.objects = [
-            center_hands,
-            spinner_chaser_middle_hands
-        ]
+        self.animation.objects = {
+            "center_hands": center_hands,
+            "spinner_center_hands": spinner_chaser_middle_hands
+        }
 
     def key_handler(self, key):
-        ChangingState.key_handler(self, key)
+        if key == ord("o"):
+            print("decreasing n_circles")
+            if self.animation.objects["spinner_center_hands"].n_circles > 0:
+                self.animation.objects["spinner_center_hands"].n_circles -= 1
+        elif key == ord("p"):
+            print("increasing n_circles")
+            self.animation.objects["spinner_center_hands"].n_circles += 1
+
+        elif key == ord("l"):
+            print("decreasing min_radius")
+            if self.animation.objects["spinner_center_hands"].min_radius > 0:
+                self.animation.objects["spinner_center_hands"].min_radius -= 1
+        elif key == ord(";"):
+            print("increasing min_radius")
+            self.animation.objects["spinner_center_hands"].min_radius += 1
+        else:
+            ChangingState.key_handler(self, key)
 
 
 class ScreenState(ChangingState):
@@ -62,9 +79,9 @@ class ScreenState(ChangingState):
         super().__init__(*args, **kwargs)
         initial_position = self.animation.pose.joints["head"].position
         chaser_screen = ChaserScreen(chase_to=self.animation.pose.joints["head"], color_a=(0,0,0), color_b=(0,0,190), mode="horizontal")
-        self.animation.objects = [
-            chaser_screen
-        ]
+        self.animation.objects = {
+            "chaser_screen": chaser_screen
+        }
 
     def key_handler(self, key):
         ChangingState.key_handler(self, key)
@@ -88,7 +105,8 @@ class HandState(ChangingState):
                 max_speed=15,
                 center_radius=5
                 )
-            self.animation.objects.append(chaser_right)
+
+            self.animation.objects["right_hand"] = chaser_right
 
         if key == ord("l"):
             print("adding left hand")
@@ -96,7 +114,7 @@ class HandState(ChangingState):
                 chase_to=self.animation.pose.joints["left_hand"],
                 max_speed=15,
                 center_radius=5)
-            self.animation.objects.append(chaser_left)
+            self.animation.objects["left_hand"] = chaser_left
 
         if key == ord("h"):
             print("adding head hand")
@@ -104,4 +122,4 @@ class HandState(ChangingState):
                 chase_to=self.animation.pose.joints["head"],
                 max_speed=15,
                 center_radius=5)
-            self.animation.objects.append(chaser_head)
+            self.animation.objects["head"] = chaser_head
