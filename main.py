@@ -240,6 +240,8 @@ def project_visuals(
             cv2.destroyAllWindows()
             return "Closing the app, user pressed 'q' key!"
 
+        animation.key_handler(key)
+
 
 if __name__ == "__main__":
     if sys.platform == "linux":
