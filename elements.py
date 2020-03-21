@@ -89,7 +89,7 @@ class Chaser(Mover):
                  chase_to, 
                  land_distance=70,  # distance to start decreasing speed to land properly
                  min_distance=10,   # min distance to chase to move
-                 max_speed=5,      # max speed is reached if aligned with target  
+                 max_speed=6,      # max speed is reached if aligned with target  
                  max_force=8,      # larger force helps redirecting trajectory
                  mass=7,
                  *args, **kwargs
@@ -100,7 +100,7 @@ class Chaser(Mover):
         self.land_distance = land_distance
         self.min_distance = min_distance
         self.max_speed = max_speed
-        self.max_force = max_speed
+        self.max_force = max_force
         self.mass = mass
 
 
@@ -173,8 +173,8 @@ class Spinner(Element):
 
     def __init__(self, 
                 n_circles=20,
-                angular_speed=0.02,
-                center_radius=200,
+                angular_speed=-0.02,
+                center_radius=100,
                 min_radius=2,
                 colors=None,
                 *args, **kwargs):
@@ -334,7 +334,7 @@ class SpinnerMiddleHands(Spinner, Chaser):
 
     def __init__(self, 
                  chase_to, 
-                 tension=0.1,                      # control how fast length increases or decreases
+                 tension=0.2,                      # control how fast length increases or decreases
                  n_circles_parameter=0.01,         # control how fast new circles are added
                  center_radius_parameter=0.05, 
                  *args, **kwargs):
@@ -349,15 +349,16 @@ class SpinnerMiddleHands(Spinner, Chaser):
     def update(self, *args, **kwargs):
 
         new_length = self.chase_to.point_to_point_distance_norm 
-        delta = new_length - self.length
+        delta = (new_length - self.length)/2
 
         
         Chaser.update(self)
         self.length += self.tension * delta
 
-        self.n_circles += int(delta*self.n_circles_parameter)
+        # self.n_circles += int(delta*self.n_circles_parameter)
         self.center_radius += delta*self.center_radius_parameter
-    
+
+        print("step: {} n_circles: {}   center_radius: {}".format(self.step, self.n_circles, self.center_radius))
 
 class Screen():
     def __init__(self, 
