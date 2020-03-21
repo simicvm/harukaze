@@ -13,7 +13,8 @@ from elements import (
     TunnelMiddleHands, 
     SpinnerMiddleHands, 
     AngledChaserScreen,
-    CenteredLines
+    CenteredLines,
+    ChaserLine
 )
 
 DEBUG = False
@@ -27,8 +28,9 @@ def set_animation():
     center_hands = MiddlePoint(point_a=animation.pose.joints["right_hand"], point_b=animation.pose.joints["left_hand"])
 
     # centered_lines = CenteredLines(chase_to=center_hands)
+    # centered_lines = ChaserLine(chase_to=center_hands)
 
-    spinner_chaser_middle_hands = SpinnerMiddleHands(chase_to=center_hands)
+    # spinner_chaser_middle_hands = SpinnerMiddleHands(chase_to=center_hands)
 
     # angled_chaser_screen = AngledChaserScreen(
     #     chase_to=animation.pose.joints["head"],
@@ -42,18 +44,20 @@ def set_animation():
     # double_screen = DoubleScreen(point_a=animation.pose.joints["left_hand"], point_b=animation.pose.joints["right_hand"])
 
     # tunnel = ChaserTunnel(chase_to=animation.pose.joints["head"])
-    # tunnel_chaser_middle_hands = TunnelMiddleHands(chase_to=center_hands, colors=[(0,0,0), (0,190,0)])
+    tunnel_chaser_middle_hands = TunnelMiddleHands(chase_to=center_hands)
 
     animation.objects["center_hands"] = center_hands
-    animation.objects["spinner_center_hands"] = spinner_chaser_middle_hands
+    # animation.objects["spinner_center_hands"] = spinner_chaser_middle_hands
     # animation.objects["centered_lines"] = centered_lines
-
+    animation.objects["tunnel"] = tunnel_chaser_middle_hands
     # animation.objects["angled_screen"] = angled_chaser_screen
     
     return animation
 
 
 class Animation():
+
+    animation_step = 0
 
     allow_transparency = False
 
@@ -83,11 +87,14 @@ class Animation():
 
     def update(self):
         for obj in self.objects.values():
+            print(obj)
             obj.update()
 
     def draw(self, frame):
         for obj in self.objects.values():
             frame = obj.draw(frame, allow_transparency=self.allow_transparency)
+
+        self.animation_step += 1
 
         return frame
 

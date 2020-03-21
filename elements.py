@@ -225,7 +225,7 @@ class Tunnel(Element):
 
         self.n_squares = n_squares
         self.size = size
-        self.colors = colors if colors is not None else [(0,0,0), (0,150,0), (0, 100, 0)]
+        self.colors = colors if colors is not None else [(0,0,0), (0,0,200), (0, 0, 250)]
         
 
     def draw(self, frame, allow_transparency):
@@ -322,19 +322,107 @@ class TunnelMiddleHands(Tunnel, Chaser):
 
 
 
-class CenteredLines(Element):
+class CenteredLines(Chaser):
+
+    lines = []
+
     def __init__(self, chase_to, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.chase_to = chase_to
-        # self.chaser_b = ChaserScreen(chase_to=point_b, color_b=(0,0,190))
+        super().__init__(chase_to=chase_to, *args, **kwargs)
+        n_lines = 100
+
+        self.lines = [self.get_random_chaser_line() for _ in range(n_lines)]
+
+    def get_random_chaser_line(self, 
+        max_speed=None,
+        max_force=None,
+        mass=None,
+        thickness=None,
+        color=None,
+        mode=None
+    ):
+
+        max_speed = np.random.randint(10, 250) if max_speed is None else max_speed 
+
+        max_force = np.random.randint(1, 10) if max_force is None else max_force
+        mass = np.random.randint(1, 10) if mass is None else mass
+
+        thickness = np.random.randint(1, 5) if thickness is None else thickness
+        color = (0, 0, np.random.randint(190, 255)) if color is None else color
+        # mode = random.choice(["vertical", "horizontal"]) if mode is None else mode
+        mode = "vertical"
+
+        return ChaserLine(chase_to=self, 
+            max_speed=max_speed, 
+            land_distance=0, 
+            mass=2,
+            color=color,
+            thickness=thickness,
+            mode=mode
+        )
+
+    def update(self):
+        Chaser.update(self)
+
+        for line in self.lines:
+            line.update()
 
     def draw(self, image, *args, **kwargs):
+        for line in self.lines:
+            image = line.draw(image, *args, **kwargs)
         return image
 
-    # def update(self):
-        # self.chaser_to.update()
-        # self.chaser_b.update()
 
+
+class ChaserLine(Chaser):
+
+    def __init__(self, chase_to, thickness=2, color=None, mode="vertical", *args, **kwargs):
+        super().__init__(chase_to=chase_to, *args, **kwargs)
+        self.thickness = thickness
+        self.mode = mode
+
+        if color is None:
+            color = (0, 0, 255)
+        else:
+            self.color = color
+
+    def horizontal_line(self, image, *args, **kwargs):
+        h, w = image.shape[:2]
+
+        left = np.array([0, self.position[1]])
+        right = np.array([w, self.position[1]])
+        draw_line(image, left, right, self.color, self.thickness)
+        return image
+
+    def vertical_line(self, image, *args, **kwargs):
+        h, w = image.shape[:2]
+
+        top = np.array([self.position[0], 0])
+        down = np.array([self.position[0], h])
+        draw_line(image, top, down, self.color, self.thickness)
+
+        return image
+
+    def draw(self, image, *args, **kwargs):
+        if self.mode == "horizontal":
+            return self.horizontal_line(image, *args, **kwargs)
+        elif self.mode == "vertical":
+            return self.vertical_line(image, *args, **kwargs)
+        else:
+            raise NotImplemented
+
+    def update(self):
+        Chaser.update(self)
+
+
+# class Cross(CenteredLines):
+    
+#     lines = []
+
+#     def __init__(self, chase_to, *args, **kwargs):
+#         super().__init__(chase_to=chase_to, *args, **kwargs)
+#         n_lines = 20
+
+#         self.lines = [self.get_random_chaser_line() for _ in range(n_lines)]
 
 
 """

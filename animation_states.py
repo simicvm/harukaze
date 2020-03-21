@@ -1,4 +1,8 @@
-from elements import MiddlePoint, SpinnerMiddleHands, ChaserScreen, DoubleScreen, AngledChaserScreen, ChaserSpinner
+from elements import (
+    MiddlePoint, SpinnerMiddleHands, ChaserScreen, 
+    DoubleScreen, AngledChaserScreen, ChaserSpinner,
+    TunnelMiddleHands, CenteredLines
+)
 
 
 class AnimationState:
@@ -34,8 +38,11 @@ class ChangingState(AnimationState):
             print("Screen state")
             self.animation._state = ScreenState(self.animation)
         elif key == ord("3"):
-            print("Hand state")
-            self.animation._state = HandState(self.animation)
+            print("Tunnel state")
+            self.animation._state = TunnelState(self.animation)
+        elif key == ord("4"):
+            print("Cross state")
+            self.animation._state = CrossState(self.animation)
 
 
 
@@ -98,8 +105,7 @@ class ScreenState(ChangingState):
 class HandState(ChangingState):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.animation.objects = [
-        ]
+        self.animation.objects = {}
 
         self.has_right_hand = False
         self.has_left_hand = False
@@ -131,3 +137,41 @@ class HandState(ChangingState):
                 max_speed=15,
                 center_radius=5)
             self.animation.objects["head"] = chaser_head
+
+
+class TunnelState(ChangingState):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        center_hands = MiddlePoint(
+            point_a=self.animation.pose.joints["right_hand"], 
+            point_b=self.animation.pose.joints["left_hand"])
+        # spinner_chaser_middle_hands = SpinnerMiddleHands(chase_to=center_hands, position=initial_position)
+
+        tunnel_chaser_middle_hands = TunnelMiddleHands(chase_to=center_hands)
+
+        self.animation.objects = {
+            "center_hands": center_hands,
+            "tunnel": tunnel_chaser_middle_hands
+        }
+    def key_handler(self, key):
+        ChangingState.key_handler(self, key)
+
+
+class CrossState(ChangingState):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        center_hands = MiddlePoint(
+            point_a=self.animation.pose.joints["right_hand"], 
+            point_b=self.animation.pose.joints["left_hand"])
+        # spinner_chaser_middle_hands = SpinnerMiddleHands(chase_to=center_hands, position=initial_position)
+
+        cross = CenteredLines(chase_to=center_hands)
+
+        self.animation.objects = {
+            "center_hands": center_hands,
+            "cross": cross
+        }
+    def key_handler(self, key):
+        ChangingState.key_handler(self, key)
