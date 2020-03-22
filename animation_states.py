@@ -45,6 +45,15 @@ class ChangingState(AnimationState):
             self.animation._state = CrossState(self.animation)
 
 
+        if key == ord("p"):
+            self.animation.drawing_pose = not self.animation.drawing_pose
+            print("drawing pose: {}".format(self.animation.drawing_pose))
+
+        if key == ord("o"):
+            self.animation.updating_pose = not self.animation.updating_pose
+            print("drawing pose: {}".format(self.animation.updating_pose))
+
+
 
 
 class SpiralState(ChangingState):
@@ -62,23 +71,23 @@ class SpiralState(ChangingState):
         }
 
     def key_handler(self, key):
-        if key == ord("z"):
+        if key == ord("r"):
             print("decreasing n_circles")
             if self.animation.objects["spinner_center_hands"].n_circles > 0:
                 self.animation.objects["spinner_center_hands"].n_circles -= 1
-        elif key == ord("x"):
+        elif key == ord("t"):
             print("increasing n_circles")
             self.animation.objects["spinner_center_hands"].n_circles += 1
 
-        elif key == ord("c"):
+        elif key == ord("f"):
             print("decreasing min_radius")
             if self.animation.objects["spinner_center_hands"].min_radius > 0:
                 self.animation.objects["spinner_center_hands"].min_radius -= 1
-        elif key == ord("v"):
+        elif key == ord("g"):
             print("increasing min_radius")
             self.animation.objects["spinner_center_hands"].min_radius += 1
 
-        elif key == ord("r"):
+        elif key == ord("y"):
             print("change thickness")
             if self.animation.objects["spinner_center_hands"].thickness == -1:
                 self.animation.objects["spinner_center_hands"].thickness = 10

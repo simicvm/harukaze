@@ -221,7 +221,6 @@ def project_visuals(
         animation.update_pose(pose_points[0])
         animation.update()
         color_image = animation.draw(color_image)
-        animation.draw_pose(color_image)
 
         if calibrator.calibrating:
             calibrator.display_calibration(color_image)
