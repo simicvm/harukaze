@@ -216,7 +216,7 @@ def project_visuals(
             pose_points = next(get_pose)
 
         black_image = np.zeros((720, 1280, 3), dtype=np.uint8)
-        color_image = black_image
+        # color_image = black_image
 
         animation.update_pose(pose_points[0])
         animation.update()
@@ -267,7 +267,8 @@ if __name__ == "__main__":
         tl=[0, 0],
         tr=[0, 0],
         br=[0, 0],
-        bl=[0, 0]
+        bl=[0, 0],
+        angle=0
     )
     message = project_visuals(
         video_file=video_file,

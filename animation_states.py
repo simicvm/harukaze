@@ -1,4 +1,8 @@
-from elements import MiddlePoint, SpinnerMiddleHands, ChaserScreen, DoubleScreen, AngledChaserScreen, ChaserSpinner
+from elements import (
+    MiddlePoint, SpinnerMiddleHands, ChaserScreen, 
+    DoubleScreen, AngledChaserScreen, ChaserSpinner,
+    TunnelMiddleHands, CenteredLines
+)
 
 
 class AnimationState:
@@ -34,8 +38,11 @@ class ChangingState(AnimationState):
             print("Screen state")
             self.animation._state = ScreenState(self.animation)
         elif key == ord("3"):
-            print("Hand state")
-            self.animation._state = HandState(self.animation)
+            print("Tunnel state")
+            self.animation._state = TunnelState(self.animation)
+        elif key == ord("4"):
+            print("Cross state")
+            self.animation._state = CrossState(self.animation)
 
 
 
@@ -55,21 +62,29 @@ class SpiralState(ChangingState):
         }
 
     def key_handler(self, key):
-        if key == ord("o"):
+        if key == ord("z"):
             print("decreasing n_circles")
             if self.animation.objects["spinner_center_hands"].n_circles > 0:
                 self.animation.objects["spinner_center_hands"].n_circles -= 1
-        elif key == ord("p"):
+        elif key == ord("x"):
             print("increasing n_circles")
             self.animation.objects["spinner_center_hands"].n_circles += 1
 
-        elif key == ord("l"):
+        elif key == ord("c"):
             print("decreasing min_radius")
             if self.animation.objects["spinner_center_hands"].min_radius > 0:
                 self.animation.objects["spinner_center_hands"].min_radius -= 1
-        elif key == ord(";"):
+        elif key == ord("v"):
             print("increasing min_radius")
             self.animation.objects["spinner_center_hands"].min_radius += 1
+
+        elif key == ord("r"):
+            print("change thickness")
+            if self.animation.objects["spinner_center_hands"].thickness == -1:
+                self.animation.objects["spinner_center_hands"].thickness = 10
+            else:
+                self.animation.objects["spinner_center_hands"].thickness = -1
+
         else:
             ChangingState.key_handler(self, key)
 
@@ -90,8 +105,7 @@ class ScreenState(ChangingState):
 class HandState(ChangingState):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.animation.objects = [
-        ]
+        self.animation.objects = {}
 
         self.has_right_hand = False
         self.has_left_hand = False
@@ -123,3 +137,49 @@ class HandState(ChangingState):
                 max_speed=15,
                 center_radius=5)
             self.animation.objects["head"] = chaser_head
+
+
+class TunnelState(ChangingState):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        initial_position = self.animation.pose.joints["head"].position
+
+        center_hands = MiddlePoint(
+            point_a=self.animation.pose.joints["right_hand"], 
+            point_b=self.animation.pose.joints["left_hand"])
+        # spinner_chaser_middle_hands = SpinnerMiddleHands(chase_to=center_hands, position=initial_position)
+
+        tunnel_chaser_middle_hands = TunnelMiddleHands(position=initial_position, chase_to=center_hands)
+
+        self.animation.objects = {
+            "center_hands": center_hands,
+            "tunnel": tunnel_chaser_middle_hands
+        }
+    def key_handler(self, key):
+        ChangingState.key_handler(self, key)
+
+
+class CrossState(ChangingState):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        # initial_position = self.animation.pose.joints["head"].position
+
+        center_hands = MiddlePoint(
+            point_a=self.animation.pose.joints["right_hand"], 
+            point_b=self.animation.pose.joints["left_hand"])
+        # spinner_chaser_middle_hands = SpinnerMiddleHands(chase_to=center_hands, position=initial_position)
+
+        cross = CenteredLines(
+
+            land_distance=0,
+            # position=initial_position, 
+            chase_to=center_hands)
+
+        self.animation.objects = {
+            "center_hands": center_hands,
+            "cross": cross
+        }
+    def key_handler(self, key):
+        ChangingState.key_handler(self, key)

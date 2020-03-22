@@ -7,8 +7,8 @@ br = None
 bl = None
 
 
-def set_calibrator(tl=tl, tr=tr, br=br, bl=bl):
-    return Calibrator(tl=tl, tr=tr, br=br, bl=bl)
+def set_calibrator(tl=tl, tr=tr, br=br, bl=bl, *args, **kwargs):
+    return Calibrator(tl=tl, tr=tr, br=br, bl=bl, *args, **kwargs)
 
 
 # class CalibratorState():
@@ -16,15 +16,13 @@ def set_calibrator(tl=tl, tr=tr, br=br, bl=bl):
 
 class Calibrator():
 
-    unit = 5
-
     calibrating = False
     calibrating_tl = False
     calibrating_tr = False
     calibrating_br = False
     calibrating_bl = False
 
-    def __init__(self, tl=None, tr=None, br=None, bl=None):
+    def __init__(self, tl=None, tr=None, br=None, bl=None, unit=5, aspect_ratio=1.78, angle=0):
         self.tl = tl if tl is not None else [0, 0]
         self.tr = tr if tr is not None else [0, 0]
         self.bl = bl if bl is not None else [0, 0]
@@ -32,11 +30,18 @@ class Calibrator():
 
         self.calibration = [self.tl, self.tr, self.br, self.bl]
 
+        self.unit = unit
+
+        self.aspect_ratio = aspect_ratio
+
+        self.angle = angle
+
+
     @staticmethod
     def draw_calibration_frame(image, n_frames=10):
 
         color = (0,0,255)
-        thickness = 2
+        thickness = 1
         height, width = image.shape[:2]
 
         for offset in np.linspace(5, max(height, width), n_frames):
@@ -64,13 +69,19 @@ class Calibrator():
 
         cv2.putText(image, "PERSPECTIVE calibration", (int(width/4), int(height/2)), 4, 2, (0, 0, 255))
         cv2.putText(image, "[[{}, {}], [{}, {}], [{}, {}], [{}, {}]]".format(
-                    self.tl[0], self.tl[1], self.tr[0], self.tr[1], self.br[0], self.br[1], self.bl[0], self.bl[1]), 
+                    round(self.tl[0], 2), round(self.tl[1], 2), 
+                    round(self.tr[0], 2), round(self.tr[1], 2), 
+                    round(self.br[0], 2), round(self.br[1], 2), 
+                    round(self.bl[0], 2), round(self.bl[1], 2)), 
                     (int(width/4), int(height/2+30)), 2, 1, (0, 255, 255))
+
+        cv2.putText(image, "ANGLE: {}".format(self.angle), 
+                    (int(width/4), int(height/2+30)+100), 2, 1, (0, 255, 255))
 
     def calibrate(self, image):
 
-        if sum(np.array(self.calibration).reshape(-1)) == 0:
-            return image
+        # if sum(np.array(self.calibration).reshape(-1)) == 0:
+        #     return image
 
         height, width = image.shape[:2]
         size = (width, height)
@@ -86,6 +97,12 @@ class Calibrator():
         M = cv2.getPerspectiveTransform(rect, dst)
         image = cv2.warpPerspective(image, M, size)
 
+        rot_center = (width/2, height/2)
+        angle = self.angle
+        rotation_matrix = cv2.getRotationMatrix2D(rot_center, angle, 1)
+        rotated_image = cv2.warpAffine(image, rotation_matrix, (width, height))
+        image = rotated_image
+
         return image
 
     def key_handler(self, key):
@@ -99,6 +116,64 @@ class Calibrator():
                 self.calibrating_bl = False
                 self.calibrating = False
             
+            # move all 
+            if key == 0: # up
+                self.tl[1] -= self.unit
+                self.tr[1] -= self.unit
+                self.bl[1] -= self.unit
+                self.br[1] -= self.unit
+            elif key == 1: #down
+                self.tl[1] += self.unit
+                self.tr[1] += self.unit
+                self.bl[1] += self.unit
+                self.br[1] += self.unit
+            elif key == 2: #left
+                self.tl[0] -= self.unit
+                self.tr[0] -= self.unit
+                self.bl[0] -= self.unit
+                self.br[0] -= self.unit
+            elif key == 3: #right
+                self.tl[0] += self.unit
+                self.tr[0] += self.unit
+                self.bl[0] += self.unit
+                self.br[0] += self.unit
+
+            # expand
+            if key == ord("z"): 
+                self.tl[0] -= round(self.unit * self.aspect_ratio, 2)
+                self.tl[1] -= self.unit
+
+                self.tr[0] += round(self.unit * self.aspect_ratio, 2)
+                self.tr[1] -= self.unit
+
+                self.bl[0] -= round(self.unit * self.aspect_ratio, 2)
+                self.bl[1] += self.unit
+
+                self.br[0] += round(self.unit * self.aspect_ratio, 2)
+                self.br[1] += self.unit
+
+            # contract
+            elif key == ord("x"): 
+                self.tl[0] += round(self.unit * self.aspect_ratio, 2)
+                self.tl[1] += self.unit
+
+                self.tr[0] -= round(self.unit * self.aspect_ratio, 2)
+                self.tr[1] += self.unit
+
+                self.bl[0] += round(self.unit * self.aspect_ratio, 2)
+                self.bl[1] -= self.unit
+
+                self.br[0] -= round(self.unit * self.aspect_ratio, 2)
+                self.br[1] -= self.unit
+
+            # rotate left
+            if key == ord("e"): 
+                print("rotating left")
+                self.angle -= self.unit
+            elif key == ord("r"): 
+                print("rotating right")
+                self.angle += self.unit
+
             # TOP LEFT CORNER
             if self.calibrating_tl:
                 if key == ord("w"):
