@@ -5,7 +5,7 @@ from pose import Pose
 import numpy as np
 
 from pose import Pose
-from animation_states import NotChangingState
+from animation_states import NotChangingState, ChangingState
 
 from elements import (
     MiddlePoint, 
@@ -24,33 +24,6 @@ def set_animation():
     pose = Pose()
     animation = Animation()
     animation.add_pose(pose)
-
-    # center_hands = MiddlePoint(point_a=animation.pose.joints["right_hand"], point_b=animation.pose.joints["left_hand"])
-
-    # centered_lines = CenteredLines(chase_to=center_hands)
-    # centered_lines = ChaserLine(chase_to=center_hands)
-
-    # spinner_chaser_middle_hands = SpinnerMiddleHands(chase_to=center_hands)
-
-    # angled_chaser_screen = AngledChaserScreen(
-    #     chase_to=animation.pose.joints["head"],
-    #     point_a=animation.pose.joints["right_hand"], 
-    #     point_b=animation.pose.joints["left_hand"]
-    # )
-    # chaser_screen = ChaserScreen(chase_to=animation.pose.joints["head"], color_a=(0,0,0))
-
-    # angled_chaser_screen = AngledChaserScreen(chase_to=animation.pose.joints["head"], color_a=(0,0,0), color_b=(0,0,190), 
-    #                                           point_a=animation.pose.joints["left_hand"], point_b=animation.pose.joints["right_hand"])
-    # double_screen = DoubleScreen(point_a=animation.pose.joints["left_hand"], point_b=animation.pose.joints["right_hand"])
-
-    # tunnel = ChaserTunnel(chase_to=animation.pose.joints["head"])
-    # tunnel_chaser_middle_hands = TunnelMiddleHands(chase_to=center_hands)
-
-    # animation.objects["center_hands"] = center_hands
-    # animation.objects["spinner_center_hands"] = spinner_chaser_middle_hands
-    # animation.objects["centered_lines"] = centered_lines
-    # animation.objects["tunnel"] = tunnel_chaser_middle_hands
-    # animation.objects["angled_screen"] = angled_chaser_screen
     
     return animation
 
@@ -58,17 +31,10 @@ def set_animation():
 class Animation():
 
     animation_step = 0
-
     allow_transparency = False
-
-    objects = {
-    }
-
+    objects = {}
     pose = None
-    # changing_state = False
 
-
-    # self._state = None
 
     def __init__(self, allow_transparency=False, drawing_pose=False, updating_pose=True):
         self.allow_transparency = allow_transparency
