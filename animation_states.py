@@ -143,12 +143,14 @@ class TunnelState(ChangingState):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
+        initial_position = self.animation.pose.joints["head"].position
+
         center_hands = MiddlePoint(
             point_a=self.animation.pose.joints["right_hand"], 
             point_b=self.animation.pose.joints["left_hand"])
         # spinner_chaser_middle_hands = SpinnerMiddleHands(chase_to=center_hands, position=initial_position)
 
-        tunnel_chaser_middle_hands = TunnelMiddleHands(chase_to=center_hands)
+        tunnel_chaser_middle_hands = TunnelMiddleHands(position=initial_position, chase_to=center_hands)
 
         self.animation.objects = {
             "center_hands": center_hands,
@@ -162,12 +164,18 @@ class CrossState(ChangingState):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
+        # initial_position = self.animation.pose.joints["head"].position
+
         center_hands = MiddlePoint(
             point_a=self.animation.pose.joints["right_hand"], 
             point_b=self.animation.pose.joints["left_hand"])
         # spinner_chaser_middle_hands = SpinnerMiddleHands(chase_to=center_hands, position=initial_position)
 
-        cross = CenteredLines(chase_to=center_hands)
+        cross = CenteredLines(
+
+            land_distance=0,
+            # position=initial_position, 
+            chase_to=center_hands)
 
         self.animation.objects = {
             "center_hands": center_hands,
