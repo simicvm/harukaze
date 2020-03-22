@@ -267,7 +267,8 @@ if __name__ == "__main__":
         tl=[0, 0],
         tr=[0, 0],
         br=[0, 0],
-        bl=[0, 0]
+        bl=[0, 0],
+        angle=0
     )
     message = project_visuals(
         video_file=video_file,

@@ -25,7 +25,7 @@ def set_animation():
     animation = Animation()
     animation.add_pose(pose)
 
-    center_hands = MiddlePoint(point_a=animation.pose.joints["right_hand"], point_b=animation.pose.joints["left_hand"])
+    # center_hands = MiddlePoint(point_a=animation.pose.joints["right_hand"], point_b=animation.pose.joints["left_hand"])
 
     # centered_lines = CenteredLines(chase_to=center_hands)
     # centered_lines = ChaserLine(chase_to=center_hands)
@@ -44,12 +44,12 @@ def set_animation():
     # double_screen = DoubleScreen(point_a=animation.pose.joints["left_hand"], point_b=animation.pose.joints["right_hand"])
 
     # tunnel = ChaserTunnel(chase_to=animation.pose.joints["head"])
-    tunnel_chaser_middle_hands = TunnelMiddleHands(chase_to=center_hands)
+    # tunnel_chaser_middle_hands = TunnelMiddleHands(chase_to=center_hands)
 
-    animation.objects["center_hands"] = center_hands
+    # animation.objects["center_hands"] = center_hands
     # animation.objects["spinner_center_hands"] = spinner_chaser_middle_hands
     # animation.objects["centered_lines"] = centered_lines
-    animation.objects["tunnel"] = tunnel_chaser_middle_hands
+    # animation.objects["tunnel"] = tunnel_chaser_middle_hands
     # animation.objects["angled_screen"] = angled_chaser_screen
     
     return animation
@@ -87,7 +87,6 @@ class Animation():
 
     def update(self):
         for obj in self.objects.values():
-            print(obj)
             obj.update()
 
     def draw(self, frame):
