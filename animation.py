@@ -36,12 +36,19 @@ class Animation():
     pose = None
 
 
-    def __init__(self, allow_transparency=False, drawing_pose=False, updating_pose=True):
+    def __init__(self, 
+                 allow_transparency=False, 
+                 drawing_pose=False, 
+                 updating_pose=True,
+                 drawing_animation=True
+    ):
         self.allow_transparency = allow_transparency
         self._state = NotChangingState(self)
 
         self.drawing_pose = drawing_pose
-        self.updating_pose = updating_pose
+        self.updating_pose = updating_pose        
+        self.drawing_animation = drawing_animation
+
 
     def add_pose(self, pose):
         self.pose = pose
@@ -60,8 +67,9 @@ class Animation():
 
     def draw(self, frame):
 
-        for obj in self.objects.values():
-            frame = obj.draw(frame, allow_transparency=self.allow_transparency)
+        if self.drawing_animation:
+            for obj in self.objects.values():
+                frame = obj.draw(frame, allow_transparency=self.allow_transparency)
 
         if self.drawing_pose:
             frame = self.draw_pose(frame)

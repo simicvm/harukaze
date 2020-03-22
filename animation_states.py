@@ -53,6 +53,9 @@ class ChangingState(AnimationState):
             self.animation.updating_pose = not self.animation.updating_pose
             print("drawing pose: {}".format(self.animation.updating_pose))
 
+        if key == ord("["):
+            self.animation.drawing_animation = not self.animation.drawing_animation
+            print("drawing animation: {}".format(self.animation.drawing_animation))
 
 
 
@@ -60,9 +63,6 @@ class SpiralState(ChangingState):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         initial_position = self.animation.pose.joints["head"].position
-        center_hands = MiddlePoint(
-            point_a=self.animation.pose.joints["right_hand"], 
-            point_b=self.animation.pose.joints["left_hand"])
         spinner_chaser_middle_hands = SpinnerMiddleHands(chase_to=center_hands, position=initial_position)
 
         self.animation.objects = {
