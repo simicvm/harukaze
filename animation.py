@@ -70,15 +70,18 @@ class Animation():
 
     # self._state = None
 
-    def __init__(self, allow_transparency=False):
+    def __init__(self, allow_transparency=False, drawing_pose=False, updating_pose=True):
         self.allow_transparency = allow_transparency
         self._state = NotChangingState(self)
+
+        self.drawing_pose = drawing_pose
+        self.updating_pose = updating_pose
 
     def add_pose(self, pose):
         self.pose = pose
 
     def update_pose(self, pose_points):
-        if self.pose is not None:
+        if self.pose is not None and self.updating_pose:
             self.pose.update_joints(pose_points)
 
     def update_pose_from_json(self, json_path):
@@ -90,8 +93,12 @@ class Animation():
             obj.update()
 
     def draw(self, frame):
+
         for obj in self.objects.values():
             frame = obj.draw(frame, allow_transparency=self.allow_transparency)
+
+        if self.drawing_pose:
+            frame = self.draw_pose(frame)
 
         self.animation_step += 1
 
